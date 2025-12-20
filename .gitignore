@@ -1,0 +1,7 @@
+__pycache__/
+log/
+saved/
+*.txt
+*.pkl
+!requirements.txt
+slurm_results/

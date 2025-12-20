@@ -1,0 +1,12 @@
+=== Bash输出开始 ===
+这个bash输出应该可见
+=== 基础测试开始 ===
+这行应该出现在stdout中
+这行显式输出到stdout
+当前工作目录: /home/zhuzhehua/2025/LLM-ESR2
+Python路径: /home/zhuzhehua/anaconda3/bin/python
+=== 基础测试结束 ===
+=== Bash输出结束 ===
+检查文件生成情况:
+-rw-rw-r-- 1 zhuzhehua zhuzhehua  22 Nov  5 09:17 stderr_11839.log
+-rw-rw-r-- 1 zhuzhehua zhuzhehua 319 Nov  5 09:17 stdout_11839.log
