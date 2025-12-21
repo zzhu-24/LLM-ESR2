@@ -170,6 +170,11 @@ parser.add_argument("--use_cross_att",
                     default=False,
                     action="store_true",
                     help="whether add a cross-attention to interact the dual-view")
+parser.add_argument("--adapter_type",
+                    default="cross_att",
+                    choices=["cross_att", "mlp"],
+                    type=str,
+                    help="type of adapter: 'cross_att' for cross attention or 'mlp' for MLP adapter")
 parser.add_argument("--alpha",
                     default=0.1,
                     type=float,

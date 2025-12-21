@@ -133,4 +133,40 @@ class Multi_CrossAttention(nn.Module):
         return output
 
 
+class MLPAdapter(nn.Module):
+    """
+    MLP Adapter替代Cross Attention
+    将x和y拼接后通过MLP处理，输出与x相同维度
+    """
+    def __init__(self, hidden_size, dropout_rate=0.1):
+        super().__init__()
+        self.hidden_size = hidden_size
+        
+        # 将x和y拼接，所以输入维度是2*hidden_size
+        self.mlp = nn.Sequential(
+            nn.Linear(2 * hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(hidden_size, hidden_size),
+            nn.Dropout(dropout_rate)
+        )
+    
+    def forward(self, x, y, log_seqs=None):
+        """
+        x: [batch_size, seq_length, hidden_size] - 主输入
+        y: [batch_size, seq_length, hidden_size] - 辅助输入
+        log_seqs: 为了保持接口一致，但MLP不需要mask
+        返回: [batch_size, seq_length, hidden_size]
+        """
+        # 拼接x和y
+        concat_input = torch.cat([x, y], dim=-1)  # [batch_size, seq_length, 2*hidden_size]
+        
+        # 通过MLP处理
+        output = self.mlp(concat_input)  # [batch_size, seq_length, hidden_size]
+        
+        # 残差连接
+        output = output + x
+        
+        return output
+
 

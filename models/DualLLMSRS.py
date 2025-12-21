@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from models.GRU4Rec import GRU4Rec
 from models.SASRec import SASRec_seq
 from models.Bert4Rec import Bert4Rec
-from models.utils import Multi_CrossAttention
+from models.utils import Multi_CrossAttention, MLPAdapter
 
 def hsic(x, y, sigma_x=1.0, sigma_y=1.0):
     """
@@ -77,6 +77,7 @@ class DualLLMGRU4Rec(GRU4Rec):
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
         self.use_cross_att = args.use_cross_att
+        self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
 
         # load llm embedding as item embedding
         llm_item_emb = pickle.load(open(os.path.join("data/"+args.dataset+"/handled/", "itm_emb_np.pkl"), "rb"))
@@ -100,8 +101,12 @@ class DualLLMGRU4Rec(GRU4Rec):
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
 
         if self.use_cross_att:
-            self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-            self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+            if self.adapter_type == 'mlp':
+                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+            else:  # default to cross_att
+                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
 
         if args.freeze: # freeze the llm embedding
             self.freeze_modules = ["llm_item_emb"]
@@ -156,6 +161,7 @@ class DualLLMSASRec(SASRec_seq):
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
         self.use_cross_att = args.use_cross_att
+        self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
 
         # load llm embedding as item embedding
         # llm_item_emb = pickle.load(open(os.path.join("data/"+args.dataset, "pca_itm_emb_np.pkl"), "rb"))
@@ -181,8 +187,12 @@ class DualLLMSASRec(SASRec_seq):
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
 
         if self.use_cross_att:
-            self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-            self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+            if self.adapter_type == 'mlp':
+                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+            else:  # default to cross_att
+                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
 
         if args.freeze: # freeze the llm embedding
             self.freeze_modules = ["llm_item_emb"]
@@ -245,6 +255,7 @@ class DualLLMBert4Rec(Bert4Rec):
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
         self.use_cross_att = args.use_cross_att
+        self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
 
         # load llm embedding as item embedding
         # llm_item_emb = pickle.load(open(os.path.join("data/"+args.dataset, "pca_itm_emb_np.pkl"), "rb"))
@@ -270,8 +281,12 @@ class DualLLMBert4Rec(Bert4Rec):
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
 
         if self.use_cross_att:
-            self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-            self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+            if self.adapter_type == 'mlp':
+                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+            else:  # default to cross_att
+                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
 
         if args.freeze: # freeze the llm embedding
             self.freeze_modules = ["llm_item_emb"]
@@ -519,6 +534,7 @@ class DualColMod(SASRec_seq):
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
         self.use_cross_att = args.use_cross_att
+        self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
         self.hgc_layers = args.hgc_layers if hasattr(args, 'hgc_layers') else 2
         self.device = device
 
@@ -547,8 +563,12 @@ class DualColMod(SASRec_seq):
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
         
         if self.use_cross_att:
-            self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-            self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+            if self.adapter_type == 'mlp':
+                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+            else:  # default to cross_att
+                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
         
         self.hgc_dropout = nn.Dropout(p=args.dropout_rate)
         
