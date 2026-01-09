@@ -166,10 +166,10 @@ parser.add_argument("--pg",
                     choices=['length', 'attention'],
                     type=str,
                     help="choose the prompt generator")
-parser.add_argument("--use_cross_att",
+parser.add_argument("--use_adapter",
                     default=False,
                     action="store_true",
-                    help="whether add a cross-attention to interact the dual-view")
+                    help="whether add an adapter")
 parser.add_argument("--adapter_type",
                     default="cross_att",
                     choices=["cross_att", "mlp"],

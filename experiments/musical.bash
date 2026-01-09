@@ -19,9 +19,9 @@ do
                 --max_len 50 \
                 --gpu_id ${gpu_id} \
                 --num_workers 2 \
-                --num_train_epochs 40 \
+                --num_train_epochs 100 \
                 --seed ${seed} \
-                --check_path "double_peft_50" \
+                --check_path "mlp_no_peft" \
                 --patience 20 \
                 --ts_user ${ts_user} \
                 --ts_item ${ts_item} \
@@ -31,9 +31,9 @@ do
                 --alpha 0.1 \
                 --pair_loss_weight 0.01 \
                 --collab_llm_ratio 1.0 \
-                --enable_id
-                # --no_cuda
-                # --use_cross_att
+                --enable_id \
+                --use_adapter \
+                --adapter_type mlp
 done
 
 # model_name="llmesr_sasrec"

@@ -144,14 +144,14 @@ class MLPAdapter(nn.Module):
         
         # 将x和y拼接，所以输入维度是2*hidden_size
         self.mlp = nn.Sequential(
-            nn.Linear(2 * hidden_size, hidden_size),
+            nn.Linear(hidden_size, hidden_size*2),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(hidden_size, hidden_size),
+            nn.Linear(hidden_size*2, hidden_size),
             nn.Dropout(dropout_rate)
         )
     
-    def forward(self, x, y, log_seqs=None):
+    def forward(self, seq1, seq2, log_seqs=None):
         """
         x: [batch_size, seq_length, hidden_size] - 主输入
         y: [batch_size, seq_length, hidden_size] - 辅助输入
@@ -159,13 +159,14 @@ class MLPAdapter(nn.Module):
         返回: [batch_size, seq_length, hidden_size]
         """
         # 拼接x和y
-        concat_input = torch.cat([x, y], dim=-1)  # [batch_size, seq_length, 2*hidden_size]
+        # concat_input = torch.cat([x, y], dim=-1)  # [batch_size, seq_length, 2*hidden_size]
+        concat_input = seq2
         
         # 通过MLP处理
         output = self.mlp(concat_input)  # [batch_size, seq_length, hidden_size]
         
         # 残差连接
-        output = output + x
+        output = output + seq2
         
         return output
 

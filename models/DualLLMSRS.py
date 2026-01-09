@@ -160,7 +160,7 @@ class DualLLMSASRec(SASRec_seq):
         # self.dev = device
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
-        self.use_cross_att = args.use_cross_att
+        self.use_adapter = args.use_adapter
         self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
 
         # load llm embedding as item embedding
@@ -171,10 +171,10 @@ class DualLLMSASRec(SASRec_seq):
         self.llm_item_emb = nn.Embedding.from_pretrained(torch.Tensor(llm_item_emb))    
         self.llm_item_emb.weight.requires_grad = True   # the grad is false in default
         # self.adapter = nn.Linear(llm_item_emb.shape[1], args.hidden_size)
-        self.adapter = nn.Sequential(
-            nn.Linear(llm_item_emb.shape[1], int(llm_item_emb.shape[1] / 2)),
-            nn.Linear(int(llm_item_emb.shape[1] / 2), args.hidden_size)
-        )
+        # self.adapter = nn.Sequential(
+        #     nn.Linear(llm_item_emb.shape[1], int(llm_item_emb.shape[1] / 2)),
+        #     nn.Linear(int(llm_item_emb.shape[1] / 2), args.hidden_size)
+        # )
 
         id_item_emb = pickle.load(open(os.path.join("data/"+args.dataset+"/handled/", "pca64_itm_emb_np.pkl"), "rb"))
         id_item_emb = np.insert(id_item_emb, 0, values=np.zeros((1, id_item_emb.shape[1])), axis=0)
@@ -186,13 +186,13 @@ class DualLLMSASRec(SASRec_seq):
         self.pos_emb = torch.nn.Embedding(args.max_len+100, args.hidden_size) # TO IMPROVE
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
 
-        if self.use_cross_att:
+        if self.use_adapter:
             if self.adapter_type == 'mlp':
-                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
-                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.adapter_id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.adapter_llm = MLPAdapter(args.hidden_size, args.dropout_rate)
             else:  # default to cross_att
-                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.adapter_id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2) # if cross attn: llm2id
+                self.adapter_llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2) # if cross attn: id2llm
 
         if args.freeze: # freeze the llm embedding
             self.freeze_modules = ["llm_item_emb"]
@@ -225,17 +225,17 @@ class DualLLMSASRec(SASRec_seq):
         llm_seqs += self.pos_emb(positions.long())
         llm_seqs = self.emb_dropout(llm_seqs)
 
-        if self.use_cross_att:
-            cross_id_seqs = self.llm2id(llm_seqs, id_seqs, log_seqs)
-            cross_llm_seqs = self.id2llm(id_seqs, llm_seqs, log_seqs)
-            cross_id_seqs = 1 * cross_id_seqs + 0 * id_seqs
-            cross_llm_seqs = 1 * cross_llm_seqs + 0 * llm_seqs
+        if self.use_adapter:
+            adapt_id_seqs = self.adapter_id(llm_seqs, id_seqs, log_seqs)
+            adapt_llm_seqs = self.adapter_llm(id_seqs, llm_seqs, log_seqs)
+            adapt_id_seqs = 1 * adapt_id_seqs + 0 * id_seqs
+            adapt_llm_seqs = 1 * adapt_llm_seqs + 0 * llm_seqs
         else:
-            cross_id_seqs = id_seqs
-            cross_llm_seqs = llm_seqs
+            adapt_id_seqs = id_seqs
+            adapt_llm_seqs = llm_seqs
 
-        id_log_feats = self.backbone(cross_id_seqs, log_seqs)
-        llm_log_feats = self.backbone(cross_llm_seqs, log_seqs)
+        id_log_feats = self.backbone(adapt_id_seqs, log_seqs)
+        llm_log_feats = self.backbone(adapt_llm_seqs, log_seqs)
 
         log_feats = torch.cat([id_log_feats, llm_log_feats], dim=-1)
 
@@ -533,7 +533,7 @@ class DualColMod(SASRec_seq):
 
         self.mask_token = item_num + 1
         self.num_heads = args.num_heads
-        self.use_cross_att = args.use_cross_att
+        self.use_adapter = args.use_adapter
         self.adapter_type = getattr(args, 'adapter_type', 'cross_att')
         self.hgc_layers = args.hgc_layers if hasattr(args, 'hgc_layers') else 2
         self.device = device
@@ -554,7 +554,7 @@ class DualColMod(SASRec_seq):
         self.id_item_emb = nn.Embedding.from_pretrained(torch.Tensor(id_item_emb))    
         self.id_item_emb.weight.requires_grad = True
 
-        self.adapter = nn.Sequential(
+        self.first_adapter = nn.Sequential(
             nn.Linear(llm_item_emb.shape[1], int(llm_item_emb.shape[1] / 2)),
             nn.Linear(int(llm_item_emb.shape[1] / 2), args.hidden_size)
         )
@@ -562,13 +562,13 @@ class DualColMod(SASRec_seq):
         self.pos_emb = torch.nn.Embedding(args.max_len+100, args.hidden_size)
         self.emb_dropout = torch.nn.Dropout(p=args.dropout_rate)
         
-        if self.use_cross_att:
+        if self.use_adapter:
             if self.adapter_type == 'mlp':
-                self.llm2id = MLPAdapter(args.hidden_size, args.dropout_rate)
-                self.id2llm = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.adapter_id = MLPAdapter(args.hidden_size, args.dropout_rate)
+                self.adapter_llm = MLPAdapter(args.hidden_size, args.dropout_rate)
             else:  # default to cross_att
-                self.llm2id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
-                self.id2llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.adapter_id = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
+                self.adapter_llm = Multi_CrossAttention(args.hidden_size, args.hidden_size, 2)
         
         self.hgc_dropout = nn.Dropout(p=args.dropout_rate)
         
@@ -671,7 +671,7 @@ class DualColMod(SASRec_seq):
 
         llm_seqs = self.llm_item_emb(log_seqs)
         init_llm_seqs = llm_seqs.clone()
-        llm_seqs = self.adapter(llm_seqs)
+        llm_seqs = self.first_adapter(llm_seqs)
         llm_seqs *= self.id_item_emb.embedding_dim ** 0.5
         llm_seqs += self.pos_emb(positions.long())
         llm_seqs = self.emb_dropout(llm_seqs)
@@ -705,18 +705,18 @@ class DualColMod(SASRec_seq):
         pairwise_align_loss = 0.0 # 暂且都设置为0
         
         # Cross attention if enabled
-        if self.use_cross_att:
-            cross_id_seqs = self.llm2id(llm_seqs, id_seqs, log_seqs)
-            cross_llm_seqs = self.id2llm(id_seqs, llm_seqs, log_seqs)
-            cross_id_seqs = 1 * cross_id_seqs + 0 * id_seqs
-            cross_llm_seqs = 1 * cross_llm_seqs + 0 * llm_seqs
+        if self.use_adapter :
+            adapter_id_seqs = self.adapter_id(llm_seqs, id_seqs, log_seqs)
+            adapter_llm_seqs = self.adapter_llm(id_seqs, llm_seqs, log_seqs)
+            adapter_id_seqs = 1 * adapter_id_seqs + 0 * id_seqs
+            adapter_llm_seqs = 1 * adapter_llm_seqs + 0 * llm_seqs
         else:
-            cross_id_seqs = id_seqs
-            cross_llm_seqs = llm_seqs
+            adapter_id_seqs = id_seqs
+            adapter_llm_seqs = llm_seqs
 
         # Process through backbone
-        id_log_feats = self.backbone(cross_id_seqs, log_seqs)
-        llm_log_feats = self.backbone(cross_llm_seqs, log_seqs)
+        id_log_feats = self.backbone(adapter_id_seqs, log_seqs)
+        llm_log_feats = self.backbone(adapter_llm_seqs, log_seqs)
 
         # llm_log_feats = torch.zeros_like(llm_log_feats, device=llm_log_feats.device)
         id_log_feats = torch.zeros_like(id_log_feats, device=id_log_feats.device)
@@ -730,7 +730,7 @@ class DualColMod(SASRec_seq):
     def _get_embedding(self, log_seqs):
         id_seq_emb = self.id_item_emb(log_seqs)
         llm_seq_emb = self.llm_item_emb(log_seqs)
-        llm_seq_emb = self.adapter(llm_seq_emb)
+        llm_seq_emb = self.first_adapter(llm_seq_emb)
 
         # llm_seq_emb = torch.zeros_like(llm_seq_emb, device=llm_seq_emb.device)
         id_seq_emb = torch.zeros_like(id_seq_emb, device=id_seq_emb.device)

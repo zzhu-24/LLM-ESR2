@@ -217,10 +217,10 @@ class LLMESR_ColMod(DualColMod):
         
         loss = super().forward(seq, pos, neg, positions, **kwargs)  # get the original loss
 
-        # for theory verification
-        # ==================
-        return loss
-        # ==================
+        # # for theory verification
+        # # ==================
+        # return loss
+        # # ==================
         
         if not self.enable_id:
             log_feats = self.log2feats(seq, positions)[:, -1, :]
