@@ -111,7 +111,8 @@ class SASRec(BaseSeqModel):
                 seq, 
                 pos, 
                 neg, 
-                positions): # for training        
+                positions,
+                **kwargs): # for training        
         '''Used to calculate pos and neg logits for loss'''
         log_feats = self.log2feats(seq, positions) # (bs, max_len, hidden_size)
         log_feats = log_feats[:, -1, :].unsqueeze(1) # (bs, hidden_size)

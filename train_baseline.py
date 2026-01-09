@@ -68,6 +68,14 @@ parser.add_argument("--use_seq2seq",
                     default=False,
                     action="store_true",
                     help="whether use seq2seq loss for SASRec and GRU4Rec")
+parser.add_argument("--ts_user",
+                    type=int,
+                    default=10,
+                    help="the threshold to split the short and long seq")
+parser.add_argument("--ts_item",
+                    type=int,
+                    default=20,
+                    help="the threshold to split the long-tail and popular items")
 
 # Model parameters
 parser.add_argument("--hidden_size",
@@ -122,6 +130,10 @@ parser.add_argument("--aug_file",
                     default="inter",
                     type=str,
                     help="the augmentation file name")
+parser.add_argument('--enable_id', 
+                    default=False,
+                    action='store_true', 
+                    help='Enable ID in user embeddings')
 parser.add_argument("--sim_user_num",
                     default=10,
                     type=int,
@@ -301,13 +313,23 @@ def main():
 
     # generator is used to manage dataset
     if args.model_name == 'gru4rec':
-        generator = GeneratorAllUser(args, logger, device)
+        if args.use_seq2seq:
+            generator = Seq2SeqGeneratorAllUser(args, logger, device)
+        else:
+            generator = GeneratorAllUser(args, logger, device)
     elif args.model_name == "bert4rec":
         generator = BertGeneratorAllUser(args, logger, device)
     elif args.model_name == "sasrec":
-        generator = Seq2SeqGeneratorAllUser(args, logger, device)
+        if args.use_seq2seq:
+            generator = Seq2SeqGeneratorAllUser(args, logger, device)
+        else:
+            # Use base Generator for point-wise loss (not GeneratorAllUser)
+            from generators.generator import Generator
+            generator = Generator(args, logger, device)
     else:
         raise ValueError(f"Unknown model name: {args.model_name}")
+
+        
 
     trainer = BaselineTrainer(args, logger, writer, device, generator)
 
