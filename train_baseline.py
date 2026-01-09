@@ -31,6 +31,10 @@ parser.add_argument("--inter_file",
                     default="inter",
                     type=str,
                     help="the name of interaction file")
+parser.add_argument("--demo", 
+                    default=False, 
+                    action='store_true', 
+                    help='whether run demo')
 parser.add_argument("--output_dir",
                     default='./saved/',
                     type=str,
@@ -106,10 +110,22 @@ parser.add_argument("--aug",
                     default=False,
                     action="store_true",
                     help="whether augment the sequence data")
+parser.add_argument("--aug_seq",
+                    default=False,
+                    action="store_true",
+                    help="whether use the augmented data")
 parser.add_argument("--aug_seq_len",
                     default=0,
                     type=int,
                     help="the augmented length for each sequence")
+parser.add_argument("--aug_file",
+                    default="inter",
+                    type=str,
+                    help="the augmentation file name")
+parser.add_argument("--sim_user_num",
+                    default=10,
+                    type=int,
+                    help="the number of similar users for enhancement")
 
 # Other parameters
 parser.add_argument("--train_batch_size",
