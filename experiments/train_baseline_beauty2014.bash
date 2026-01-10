@@ -4,7 +4,7 @@ export CUDA_LAUNCH_BLOCKING=1
 export TORCH_USE_CUDA_DSA=1
 
 gpu_id=0
-dataset="beauty"        
+dataset="beauty2014"        
 seed_list=(42)
 ts_user=7
 ts_item=6

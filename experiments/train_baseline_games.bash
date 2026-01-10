@@ -4,8 +4,10 @@ export CUDA_LAUNCH_BLOCKING=1
 export TORCH_USE_CUDA_DSA=1
 
 gpu_id=0
-dataset="fashion"
+dataset="games"
 seed_list=(42)
+ts_user=12
+ts_item=13
 
 # Train SASRec
 model_name="sasrec"
@@ -15,7 +17,7 @@ do
                 --model_name ${model_name} \
                 --hidden_size 64 \
                 --train_batch_size 128 \
-                --max_len 50 \
+                --max_len 200 \
                 --gpu_id ${gpu_id} \
                 --num_workers 8 \
                 --num_train_epochs 200 \
@@ -39,7 +41,7 @@ do
                 --model_name ${model_name} \
                 --hidden_size 64 \
                 --train_batch_size 128 \
-                --max_len 50 \
+                --max_len 200 \
                 --gpu_id ${gpu_id} \
                 --num_workers 8 \
                 --mask_prob ${mask_prob} \
@@ -63,7 +65,7 @@ do
                 --model_name ${model_name} \
                 --hidden_size 64 \
                 --train_batch_size 128 \
-                --max_len 50 \
+                --max_len 200 \
                 --gpu_id ${gpu_id} \
                 --num_workers 8 \
                 --num_train_epochs 200 \

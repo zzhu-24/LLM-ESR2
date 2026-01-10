@@ -9,10 +9,10 @@
 #SBATCH --gres=gpu:1                    # 若使用2块卡，则gres=gpu:2
 #SBATCH --mail-type=end                 # 设置邮件通知类型，可选all, end, fail, begin等
 #SBATCH --mail-user=your@1993604693@qq.com   # 设置通知邮箱
-#SBATCH --output=slurm_results/appliances/%j.out                 # 设置标准输出的文件路径
-#SBATCH --error=slurm_results/appliances/%j.err                  # 设置标准错误的文件路径
+#SBATCH --output=slurm_results/baselines/games/%j.out                 # 设置标准输出的文件路径
+#SBATCH --error=slurm_results/baselines/games/%j.err                  # 设置标准错误的文件路径
 
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate llmesr
 cd /home/zhuzhehua/2025/LLM-ESR2
-bash experiments/appliances.bash
+bash experiments/train_baseline_games.bash
