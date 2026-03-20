@@ -1,0 +1,23 @@
+2026-02-17 19:07:46 | Log file: ./Intro_problem/beauty2014/logs/step4_20260217_190746.log
+2026-02-17 19:07:46 | ============================================================
+2026-02-17 19:07:46 | Experiment Configuration
+2026-02-17 19:07:46 | ============================================================
+2026-02-17 19:07:46 |   experiment: step4
+2026-02-17 19:07:46 |   dataset: beauty2014
+2026-02-17 19:07:46 |   inter_file: inter
+2026-02-17 19:07:46 |   max_len: 200
+2026-02-17 19:07:46 |   aug_seq_len: 0
+2026-02-17 19:07:46 |   batch_size: 128
+2026-02-17 19:07:46 |   num_train_epochs: 100
+2026-02-17 19:07:46 |   num_workers: 0
+2026-02-17 19:07:46 |   test_neg: 100
+2026-02-17 19:07:46 |   lr: 0.001
+2026-02-17 19:07:46 |   patience: 20
+2026-02-17 19:07:46 |   align_lambda: 1.0
+2026-02-17 19:07:46 |   seed: 42
+2026-02-17 19:07:46 | ============================================================
+2026-02-17 19:07:47 | Dataset: beauty2014 | Users: 52200 | Items: 57287
+2026-02-17 19:07:48 | Train samples: 240462 | Eval samples: 50498
+2026-02-17 19:07:48 | Loaded ID Embedding from ./data/beauty2014/handled/pca64_itm_emb_np.pkl, shape: (57291, 64)
+2026-02-17 19:07:48 | Loaded Modality Embedding from ./data/beauty2014/handled/itm_emb_np.pkl, shape: (57291, 768)
+2026-02-17 19:07:48 | ===== Running Step4: Modality + Normalize Adapter + BCE + MSE Align =====

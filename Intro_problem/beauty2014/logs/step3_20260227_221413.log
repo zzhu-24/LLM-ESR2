@@ -1,0 +1,55 @@
+2026-02-27 22:14:13 | Log file: ./Intro_problem/beauty2014/logs/step3_20260227_221413.log
+2026-02-27 22:14:13 | ============================================================
+2026-02-27 22:14:13 | Experiment Configuration
+2026-02-27 22:14:13 | ============================================================
+2026-02-27 22:14:13 |   experiment: step3
+2026-02-27 22:14:13 |   dataset: beauty2014
+2026-02-27 22:14:13 |   inter_file: inter
+2026-02-27 22:14:13 |   max_len: 50
+2026-02-27 22:14:13 |   aug_seq_len: 0
+2026-02-27 22:14:13 |   batch_size: 128
+2026-02-27 22:14:13 |   num_train_epochs: 100
+2026-02-27 22:14:13 |   num_workers: 0
+2026-02-27 22:14:13 |   test_neg: 100
+2026-02-27 22:14:13 |   lr: 0.001
+2026-02-27 22:14:13 |   patience: 20
+2026-02-27 22:14:13 |   align_lambda: 1.0
+2026-02-27 22:14:13 |   attn_display_len: 20
+2026-02-27 22:14:13 |   seed: 42
+2026-02-27 22:14:13 | ============================================================
+2026-02-27 22:14:14 | Dataset: beauty2014 | Users: 52200 | Items: 57287
+2026-02-27 22:14:14 | Train samples: 240462 | Eval samples: 50498
+2026-02-27 22:14:14 | Loaded ID Embedding from ./data/beauty2014/handled/pca64_itm_emb_np.pkl, shape: (57291, 64)
+2026-02-27 22:14:16 | Loaded Modality Embedding from ./data/beauty2014/handled/itm_emb_np.pkl, shape: (57291, 768)
+2026-02-27 22:14:16 | ===== Running Step3: Modality + MLP Adapter + BCE + MSE Align =====
+2026-02-27 22:15:39 | Epoch 1/100 | Train Loss: 0.0901 | NDCG@10: 0.2762 | HR@10: 0.4317
+2026-02-27 22:16:25 | Epoch 2/100 | Train Loss: 0.0499 | NDCG@10: 0.2921 | HR@10: 0.4369
+2026-02-27 22:17:25 | Epoch 3/100 | Train Loss: 0.0418 | NDCG@10: 0.2929 | HR@10: 0.4408
+2026-02-27 22:18:27 | Epoch 4/100 | Train Loss: 0.0382 | NDCG@10: 0.2853 | HR@10: 0.4326
+2026-02-27 22:19:14 | Epoch 5/100 | Train Loss: 0.0364 | NDCG@10: 0.2870 | HR@10: 0.4353
+2026-02-27 22:20:05 | Epoch 6/100 | Train Loss: 0.0352 | NDCG@10: 0.2877 | HR@10: 0.4345
+2026-02-27 22:20:49 | Epoch 7/100 | Train Loss: 0.0343 | NDCG@10: 0.2779 | HR@10: 0.4230
+2026-02-27 22:21:46 | Epoch 8/100 | Train Loss: 0.0337 | NDCG@10: 0.2859 | HR@10: 0.4329
+2026-02-27 22:22:35 | Epoch 9/100 | Train Loss: 0.0331 | NDCG@10: 0.2814 | HR@10: 0.4256
+2026-02-27 22:23:22 | Epoch 10/100 | Train Loss: 0.0326 | NDCG@10: 0.2875 | HR@10: 0.4363
+2026-02-27 22:24:07 | Epoch 11/100 | Train Loss: 0.0322 | NDCG@10: 0.2749 | HR@10: 0.4169
+2026-02-27 22:25:01 | Epoch 12/100 | Train Loss: 0.0318 | NDCG@10: 0.2805 | HR@10: 0.4280
+2026-02-27 22:25:52 | Epoch 13/100 | Train Loss: 0.0315 | NDCG@10: 0.2801 | HR@10: 0.4239
+2026-02-27 22:26:34 | Epoch 14/100 | Train Loss: 0.0312 | NDCG@10: 0.2750 | HR@10: 0.4184
+2026-02-27 22:27:25 | Epoch 15/100 | Train Loss: 0.0310 | NDCG@10: 0.2726 | HR@10: 0.4134
+2026-02-27 22:28:22 | Epoch 16/100 | Train Loss: 0.0308 | NDCG@10: 0.2746 | HR@10: 0.4179
+2026-02-27 22:29:14 | Epoch 17/100 | Train Loss: 0.0305 | NDCG@10: 0.2766 | HR@10: 0.4227
+2026-02-27 22:29:56 | Epoch 18/100 | Train Loss: 0.0303 | NDCG@10: 0.2731 | HR@10: 0.4156
+2026-02-27 22:30:53 | Epoch 19/100 | Train Loss: 0.0301 | NDCG@10: 0.2693 | HR@10: 0.4105
+2026-02-27 22:31:38 | Epoch 20/100 | Train Loss: 0.0299 | NDCG@10: 0.2727 | HR@10: 0.4145
+2026-02-27 22:32:22 | Epoch 21/100 | Train Loss: 0.0298 | NDCG@10: 0.2759 | HR@10: 0.4201
+2026-02-27 22:33:11 | Epoch 22/100 | Train Loss: 0.0296 | NDCG@10: 0.2768 | HR@10: 0.4197
+2026-02-27 22:34:01 | Epoch 23/100 | Train Loss: 0.0295 | NDCG@10: 0.2674 | HR@10: 0.4078
+2026-02-27 22:34:01 | Early stopping at epoch 23, best epoch: 3, best NDCG@10: 0.2929
+2026-02-27 22:34:01 | Training finished. Best epoch: 3, Best NDCG@10: 0.2929
+2026-02-27 22:34:03 | Collecting attention weights (display_len=20)...
+2026-02-27 22:34:24 | Averaged over 1653 samples
+2026-02-27 22:34:28 | Attention heatmap saved to ./Intro_problem/beauty2014/step3/attn_heatmap_step3.png
+2026-02-27 22:34:28 | Collecting modality cosine similarity (display_len=20)...
+2026-02-27 22:34:46 | Averaged over 1653 samples for modality cosine
+2026-02-27 22:34:47 | Modality cosine heatmap saved to ./Intro_problem/beauty2014/step3/modality_cosine_heatmap_step3.png

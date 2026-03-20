@@ -1,0 +1,24 @@
+2026-02-18 18:05:32 | Log file: ./Intro_problem/beauty2014/logs/step2_20260218_180532.log
+2026-02-18 18:05:32 | ============================================================
+2026-02-18 18:05:32 | Experiment Configuration
+2026-02-18 18:05:32 | ============================================================
+2026-02-18 18:05:32 |   experiment: step2
+2026-02-18 18:05:32 |   dataset: beauty2014
+2026-02-18 18:05:32 |   inter_file: inter
+2026-02-18 18:05:32 |   max_len: 50
+2026-02-18 18:05:32 |   aug_seq_len: 0
+2026-02-18 18:05:32 |   batch_size: 128
+2026-02-18 18:05:32 |   num_train_epochs: 100
+2026-02-18 18:05:32 |   num_workers: 0
+2026-02-18 18:05:32 |   test_neg: 100
+2026-02-18 18:05:32 |   lr: 0.001
+2026-02-18 18:05:32 |   patience: 20
+2026-02-18 18:05:32 |   align_lambda: 1.0
+2026-02-18 18:05:32 |   attn_display_len: 20
+2026-02-18 18:05:32 |   seed: 42
+2026-02-18 18:05:32 | ============================================================
+2026-02-18 18:05:33 | Dataset: beauty2014 | Users: 52200 | Items: 57287
+2026-02-18 18:05:34 | Train samples: 240462 | Eval samples: 50498
+2026-02-18 18:05:34 | Loaded ID Embedding from ./data/beauty2014/handled/pca64_itm_emb_np.pkl, shape: (57291, 64)
+2026-02-18 18:05:35 | Loaded Modality Embedding from ./data/beauty2014/handled/itm_emb_np.pkl, shape: (57291, 768)
+2026-02-18 18:05:35 | ===== Running Step2: Modality Embedding + SASRec + BCE =====

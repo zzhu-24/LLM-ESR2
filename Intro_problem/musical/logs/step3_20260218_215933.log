@@ -1,0 +1,58 @@
+2026-02-18 21:59:33 | Log file: ./Intro_problem/musical/logs/step3_20260218_215933.log
+2026-02-18 21:59:33 | ============================================================
+2026-02-18 21:59:33 | Experiment Configuration
+2026-02-18 21:59:33 | ============================================================
+2026-02-18 21:59:33 |   experiment: step3
+2026-02-18 21:59:33 |   dataset: musical
+2026-02-18 21:59:33 |   inter_file: inter
+2026-02-18 21:59:33 |   max_len: 50
+2026-02-18 21:59:33 |   aug_seq_len: 0
+2026-02-18 21:59:33 |   batch_size: 128
+2026-02-18 21:59:33 |   num_train_epochs: 100
+2026-02-18 21:59:33 |   num_workers: 0
+2026-02-18 21:59:33 |   test_neg: 100
+2026-02-18 21:59:33 |   lr: 0.001
+2026-02-18 21:59:33 |   patience: 20
+2026-02-18 21:59:33 |   align_lambda: 1.0
+2026-02-18 21:59:33 |   attn_display_len: 20
+2026-02-18 21:59:33 |   seed: 42
+2026-02-18 21:59:33 | ============================================================
+2026-02-18 21:59:33 | Dataset: musical | Users: 40642 | Items: 30674
+2026-02-18 21:59:33 | Train samples: 201673 | Eval samples: 40262
+2026-02-18 21:59:33 | Loaded ID Embedding from ./data/musical/handled/pca64_itm_emb_np.pkl, shape: (30678, 64)
+2026-02-18 21:59:34 | Loaded Modality Embedding from ./data/musical/handled/itm_emb_np.pkl, shape: (30678, 768)
+2026-02-18 21:59:34 | ===== Running Step3: Modality + MLP Adapter + BCE + MSE Align =====
+2026-02-18 22:00:22 | Epoch 1/100 | Train Loss: 0.0984 | NDCG@10: 0.2874 | HR@10: 0.4606
+2026-02-18 22:01:09 | Epoch 2/100 | Train Loss: 0.0555 | NDCG@10: 0.3286 | HR@10: 0.5090
+2026-02-18 22:02:02 | Epoch 3/100 | Train Loss: 0.0484 | NDCG@10: 0.3279 | HR@10: 0.5052
+2026-02-18 22:02:48 | Epoch 4/100 | Train Loss: 0.0454 | NDCG@10: 0.3281 | HR@10: 0.5093
+2026-02-18 22:03:35 | Epoch 5/100 | Train Loss: 0.0442 | NDCG@10: 0.3287 | HR@10: 0.5096
+2026-02-18 22:04:14 | Epoch 6/100 | Train Loss: 0.1195 | NDCG@10: 0.3109 | HR@10: 0.4921
+2026-02-18 22:04:51 | Epoch 7/100 | Train Loss: 0.0497 | NDCG@10: 0.3261 | HR@10: 0.5076
+2026-02-18 22:05:33 | Epoch 8/100 | Train Loss: 0.0450 | NDCG@10: 0.3308 | HR@10: 0.5148
+2026-02-18 22:06:22 | Epoch 9/100 | Train Loss: 0.0432 | NDCG@10: 0.3433 | HR@10: 0.5284
+2026-02-18 22:07:12 | Epoch 10/100 | Train Loss: 0.0421 | NDCG@10: 0.3356 | HR@10: 0.5192
+2026-02-18 22:07:52 | Epoch 11/100 | Train Loss: 0.0413 | NDCG@10: 0.3391 | HR@10: 0.5218
+2026-02-18 22:08:25 | Epoch 12/100 | Train Loss: 0.0406 | NDCG@10: 0.3274 | HR@10: 0.5075
+2026-02-18 22:09:11 | Epoch 13/100 | Train Loss: 0.0400 | NDCG@10: 0.3328 | HR@10: 0.5156
+2026-02-18 22:10:02 | Epoch 14/100 | Train Loss: 0.0396 | NDCG@10: 0.3326 | HR@10: 0.5139
+2026-02-18 22:10:49 | Epoch 15/100 | Train Loss: 0.0392 | NDCG@10: 0.3383 | HR@10: 0.5184
+2026-02-18 22:11:25 | Epoch 16/100 | Train Loss: 0.0389 | NDCG@10: 0.3387 | HR@10: 0.5205
+2026-02-18 22:12:03 | Epoch 17/100 | Train Loss: 0.0386 | NDCG@10: 0.3323 | HR@10: 0.5102
+2026-02-18 22:12:35 | Epoch 18/100 | Train Loss: 0.0384 | NDCG@10: 0.3398 | HR@10: 0.5206
+2026-02-18 22:13:05 | Epoch 19/100 | Train Loss: 0.0382 | NDCG@10: 0.3288 | HR@10: 0.5060
+2026-02-18 22:13:44 | Epoch 20/100 | Train Loss: 0.0381 | NDCG@10: 0.3303 | HR@10: 0.5089
+2026-02-18 22:14:14 | Epoch 21/100 | Train Loss: 0.0377 | NDCG@10: 0.3352 | HR@10: 0.5147
+2026-02-18 22:14:44 | Epoch 22/100 | Train Loss: 0.0375 | NDCG@10: 0.3371 | HR@10: 0.5179
+2026-02-18 22:15:13 | Epoch 23/100 | Train Loss: 0.0374 | NDCG@10: 0.3290 | HR@10: 0.5070
+2026-02-18 22:15:45 | Epoch 24/100 | Train Loss: 0.0373 | NDCG@10: 0.3345 | HR@10: 0.5134
+2026-02-18 22:16:21 | Epoch 25/100 | Train Loss: 0.0371 | NDCG@10: 0.3272 | HR@10: 0.5037
+2026-02-18 22:17:00 | Epoch 26/100 | Train Loss: 0.0370 | NDCG@10: 0.3256 | HR@10: 0.5028
+2026-02-18 22:17:46 | Epoch 27/100 | Train Loss: 0.0369 | NDCG@10: 0.3321 | HR@10: 0.5121
+2026-02-18 22:18:38 | Epoch 28/100 | Train Loss: 0.0368 | NDCG@10: 0.3286 | HR@10: 0.5075
+2026-02-18 22:19:14 | Epoch 29/100 | Train Loss: 0.0367 | NDCG@10: 0.3322 | HR@10: 0.5109
+2026-02-18 22:19:14 | Early stopping at epoch 29, best epoch: 9, best NDCG@10: 0.3433
+2026-02-18 22:19:14 | Training finished. Best epoch: 9, Best NDCG@10: 0.3433
+2026-02-18 22:19:16 | Collecting attention weights (display_len=20)...
+2026-02-18 22:19:35 | Averaged over 1293 samples
+2026-02-18 22:19:36 | Attention heatmap saved to ./Intro_problem/musical/step3/attn_heatmap_step3.png

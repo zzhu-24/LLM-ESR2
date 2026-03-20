@@ -1,0 +1,69 @@
+2026-02-18 21:02:59 | Log file: ./Intro_problem/musical/logs/step1_20260218_210259.log
+2026-02-18 21:02:59 | ============================================================
+2026-02-18 21:02:59 | Experiment Configuration
+2026-02-18 21:02:59 | ============================================================
+2026-02-18 21:02:59 |   experiment: step1
+2026-02-18 21:02:59 |   dataset: musical
+2026-02-18 21:02:59 |   inter_file: inter
+2026-02-18 21:02:59 |   max_len: 50
+2026-02-18 21:02:59 |   aug_seq_len: 0
+2026-02-18 21:02:59 |   batch_size: 128
+2026-02-18 21:02:59 |   num_train_epochs: 100
+2026-02-18 21:02:59 |   num_workers: 0
+2026-02-18 21:02:59 |   test_neg: 100
+2026-02-18 21:02:59 |   lr: 0.001
+2026-02-18 21:02:59 |   patience: 20
+2026-02-18 21:02:59 |   align_lambda: 1.0
+2026-02-18 21:02:59 |   attn_display_len: 20
+2026-02-18 21:02:59 |   seed: 42
+2026-02-18 21:02:59 | ============================================================
+2026-02-18 21:02:59 | Dataset: musical | Users: 40642 | Items: 30674
+2026-02-18 21:03:00 | Train samples: 201673 | Eval samples: 40262
+2026-02-18 21:03:00 | Loaded ID Embedding from ./data/musical/handled/pca64_itm_emb_np.pkl, shape: (30678, 64)
+2026-02-18 21:03:05 | Loaded Modality Embedding from ./data/musical/handled/itm_emb_np.pkl, shape: (30678, 768)
+2026-02-18 21:03:05 | ===== Running Step1: ID Embedding + SASRec + BCE =====
+2026-02-18 21:03:45 | Epoch 1/100 | Train Loss: 0.2695 | NDCG@10: 0.0136 | HR@10: 0.0299
+2026-02-18 21:04:22 | Epoch 2/100 | Train Loss: 0.0773 | NDCG@10: 0.0172 | HR@10: 0.0371
+2026-02-18 21:04:55 | Epoch 3/100 | Train Loss: 0.0481 | NDCG@10: 0.0268 | HR@10: 0.0634
+2026-02-18 21:05:22 | Epoch 4/100 | Train Loss: 0.0412 | NDCG@10: 0.0398 | HR@10: 0.1002
+2026-02-18 21:06:00 | Epoch 5/100 | Train Loss: 0.0392 | NDCG@10: 0.0465 | HR@10: 0.1177
+2026-02-18 21:06:35 | Epoch 6/100 | Train Loss: 0.0381 | NDCG@10: 0.0490 | HR@10: 0.1234
+2026-02-18 21:07:11 | Epoch 7/100 | Train Loss: 0.0370 | NDCG@10: 0.0525 | HR@10: 0.1331
+2026-02-18 21:07:49 | Epoch 8/100 | Train Loss: 0.0358 | NDCG@10: 0.0533 | HR@10: 0.1359
+2026-02-18 21:08:27 | Epoch 9/100 | Train Loss: 0.0347 | NDCG@10: 0.0578 | HR@10: 0.1442
+2026-02-18 21:08:54 | Epoch 10/100 | Train Loss: 0.0335 | NDCG@10: 0.0584 | HR@10: 0.1465
+2026-02-18 21:09:28 | Epoch 11/100 | Train Loss: 0.0324 | NDCG@10: 0.0645 | HR@10: 0.1611
+2026-02-18 21:09:54 | Epoch 12/100 | Train Loss: 0.0312 | NDCG@10: 0.0637 | HR@10: 0.1586
+2026-02-18 21:10:27 | Epoch 13/100 | Train Loss: 0.0302 | NDCG@10: 0.0666 | HR@10: 0.1663
+2026-02-18 21:11:01 | Epoch 14/100 | Train Loss: 0.0291 | NDCG@10: 0.0637 | HR@10: 0.1594
+2026-02-18 21:11:38 | Epoch 15/100 | Train Loss: 0.0281 | NDCG@10: 0.0656 | HR@10: 0.1632
+2026-02-18 21:12:13 | Epoch 16/100 | Train Loss: 0.0271 | NDCG@10: 0.0659 | HR@10: 0.1639
+2026-02-18 21:12:44 | Epoch 17/100 | Train Loss: 0.0261 | NDCG@10: 0.0619 | HR@10: 0.1530
+2026-02-18 21:13:07 | Epoch 18/100 | Train Loss: 0.0252 | NDCG@10: 0.0659 | HR@10: 0.1622
+2026-02-18 21:13:30 | Epoch 19/100 | Train Loss: 0.0243 | NDCG@10: 0.0687 | HR@10: 0.1691
+2026-02-18 21:13:55 | Epoch 20/100 | Train Loss: 0.0235 | NDCG@10: 0.0665 | HR@10: 0.1649
+2026-02-18 21:14:19 | Epoch 21/100 | Train Loss: 0.0228 | NDCG@10: 0.0651 | HR@10: 0.1597
+2026-02-18 21:14:54 | Epoch 22/100 | Train Loss: 0.0221 | NDCG@10: 0.0627 | HR@10: 0.1545
+2026-02-18 21:15:31 | Epoch 23/100 | Train Loss: 0.0215 | NDCG@10: 0.0669 | HR@10: 0.1658
+2026-02-18 21:16:03 | Epoch 24/100 | Train Loss: 0.0208 | NDCG@10: 0.0648 | HR@10: 0.1610
+2026-02-18 21:16:40 | Epoch 25/100 | Train Loss: 0.0203 | NDCG@10: 0.0654 | HR@10: 0.1626
+2026-02-18 21:17:16 | Epoch 26/100 | Train Loss: 0.0198 | NDCG@10: 0.0648 | HR@10: 0.1606
+2026-02-18 21:17:39 | Epoch 27/100 | Train Loss: 0.0193 | NDCG@10: 0.0638 | HR@10: 0.1593
+2026-02-18 21:18:10 | Epoch 28/100 | Train Loss: 0.0189 | NDCG@10: 0.0650 | HR@10: 0.1605
+2026-02-18 21:18:36 | Epoch 29/100 | Train Loss: 0.0185 | NDCG@10: 0.0623 | HR@10: 0.1558
+2026-02-18 21:19:02 | Epoch 30/100 | Train Loss: 0.0181 | NDCG@10: 0.0632 | HR@10: 0.1569
+2026-02-18 21:19:38 | Epoch 31/100 | Train Loss: 0.0178 | NDCG@10: 0.0626 | HR@10: 0.1560
+2026-02-18 21:20:19 | Epoch 32/100 | Train Loss: 0.0174 | NDCG@10: 0.0639 | HR@10: 0.1575
+2026-02-18 21:20:56 | Epoch 33/100 | Train Loss: 0.0171 | NDCG@10: 0.0642 | HR@10: 0.1585
+2026-02-18 21:21:29 | Epoch 34/100 | Train Loss: 0.0168 | NDCG@10: 0.0623 | HR@10: 0.1550
+2026-02-18 21:21:58 | Epoch 35/100 | Train Loss: 0.0166 | NDCG@10: 0.0631 | HR@10: 0.1567
+2026-02-18 21:22:24 | Epoch 36/100 | Train Loss: 0.0164 | NDCG@10: 0.0600 | HR@10: 0.1504
+2026-02-18 21:22:59 | Epoch 37/100 | Train Loss: 0.0161 | NDCG@10: 0.0601 | HR@10: 0.1487
+2026-02-18 21:23:31 | Epoch 38/100 | Train Loss: 0.0159 | NDCG@10: 0.0609 | HR@10: 0.1521
+2026-02-18 21:24:05 | Epoch 39/100 | Train Loss: 0.0157 | NDCG@10: 0.0627 | HR@10: 0.1552
+2026-02-18 21:24:05 | Early stopping at epoch 39, best epoch: 19, best NDCG@10: 0.0687
+2026-02-18 21:24:05 | Training finished. Best epoch: 19, Best NDCG@10: 0.0687
+2026-02-18 21:24:05 | Step1 Item Embedding saved to ./Intro_problem/musical/step1_item_emb.pkl
+2026-02-18 21:24:05 | Collecting attention weights (display_len=20)...
+2026-02-18 21:24:23 | Averaged over 1293 samples
+2026-02-18 21:24:25 | Attention heatmap saved to ./Intro_problem/musical/step1/attn_heatmap_step1.png
