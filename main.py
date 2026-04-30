@@ -4,6 +4,7 @@ import argparse
 import torch
 
 from generators.generator import Seq2SeqGeneratorAllUser
+from generators.generator import Seq2SeqGenerator
 from generators.generator import GeneratorAllUser
 from generators.bert_generator import BertGeneratorAllUser
 from trainers.sequence_trainer import SeqTrainer
@@ -15,9 +16,9 @@ parser = argparse.ArgumentParser()
 
 # Required parameters
 parser.add_argument("--model_name", 
-                    default='llmesr_sasrec',
+                    default='llmesr_clean',
                     choices=[
-                    "llmesr_sasrec", "llmesr_bert4rec", "llmesr_gru4rec", "llmesr_colmod"
+                    "llmesr_clean", "llmesr_sasrec", "llmesr_bert4rec", "llmesr_gru4rec", "llmesr_colmod"
                     ],
                     type=str, 
                     required=False,
@@ -85,6 +86,16 @@ parser.add_argument("--hidden_size",
                     default=64,
                     type=int,
                     help="the hidden size of embedding")
+parser.add_argument("--backbone",
+                    default="sasrec",
+                    choices=["sasrec"],
+                    type=str,
+                    help="the sequential recommendation backbone for llmesr_clean")
+parser.add_argument("--fusion",
+                    default="sum",
+                    choices=["sum", "concat", "gate"],
+                    type=str,
+                    help="how llmesr_clean fuses ID and LLM item views")
 parser.add_argument("--trm_num",
                     default=2,
                     type=int,
@@ -170,6 +181,10 @@ parser.add_argument("--use_adapter",
                     default=False,
                     action="store_true",
                     help="whether add an adapter")
+parser.add_argument("--use_cross_att",
+                    default=False,
+                    action="store_true",
+                    help="legacy alias for enabling cross-attention adapter")
 parser.add_argument("--adapter_type",
                     default="cross_att",
                     choices=["cross_att", "mlp"],
@@ -179,6 +194,10 @@ parser.add_argument("--alpha",
                     default=0.1,
                     type=float,
                     help="the weight of auxiliary loss")
+parser.add_argument("--use_align_loss",
+                    default=False,
+                    action="store_true",
+                    help="whether llmesr_clean uses similar-user alignment loss")
 parser.add_argument("--user_sim_func",
                     default="kd",
                     type=str,
@@ -277,6 +296,8 @@ parser.add_argument("--log",
 torch.autograd.set_detect_anomaly(True)
 
 args = parser.parse_args()
+if args.use_cross_att:
+    args.use_adapter = True
 set_seed(args.seed) # fix the random seed
 args.output_dir = os.path.join(args.output_dir, args.dataset)
 args.pretrain_dir = os.path.join(args.output_dir, args.pretrain_dir)
@@ -304,6 +325,8 @@ def main():
         generator = BertGeneratorAllUser(args, logger, device)
     elif args.model_name in ["llmesr_sasrec"]:
         generator = Seq2SeqGeneratorAllUser(args, logger, device)
+    elif args.model_name in ["llmesr_clean"]:
+        generator = Seq2SeqGeneratorAllUser(args, logger, device) if args.use_align_loss else Seq2SeqGenerator(args, logger, device)
     elif args.model_name in ["llmesr_colmod"]:
         generator = Seq2SeqGeneratorAllUser(args, logger, device)
     else:

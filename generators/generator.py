@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 from collections import defaultdict
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
-from generators.data import SeqDataset, SeqDatasetAllUser, Seq2SeqDatasetAllUser
+from generators.data import SeqDataset, SeqDatasetAllUser, Seq2SeqDataset, Seq2SeqDatasetAllUser
 from utils.utils import unzip_data, concat_data
 
 
@@ -31,7 +31,7 @@ class Generator(object):
         end = time.time()
         self.logger.info("Dataset is loaded: consume %.3f s" % (end - start))
 
-    
+
     def _load_dataset(self):
         '''Load train, validation, test dataset'''
 
@@ -153,13 +153,32 @@ class GeneratorAllUser(Generator):
         return train_dataloader
 
     
+class Seq2SeqGenerator(Generator):
 
-class Seq2SeqGeneratorAllUser(Generator):
-    
     def __init__(self, args, logger, device):
 
         super().__init__(args, logger, device)
-    
+
+    def make_trainloader(self):
+
+        train_dataset = unzip_data(self.train, aug=self.args.aug, aug_num=self.args.aug_seq_len)
+        self.train_dataset = Seq2SeqDataset(self.args, train_dataset, self.item_num, self.args.max_len, self.args.train_neg)
+
+        train_dataloader = DataLoader(self.train_dataset,
+                                      sampler=RandomSampler(self.train_dataset),
+                                      batch_size=self.bs,
+                                      num_workers=self.num_workers)
+
+        return train_dataloader
+
+
+
+class Seq2SeqGeneratorAllUser(Generator):
+
+    def __init__(self, args, logger, device):
+
+        super().__init__(args, logger, device)
+
 
     def make_trainloader(self):
 
@@ -170,8 +189,5 @@ class Seq2SeqGeneratorAllUser(Generator):
                                       sampler=RandomSampler(self.train_dataset),
                                       batch_size=self.bs,
                                       num_workers=self.num_workers)
-        
-        return train_dataloader
-    
 
-    
+        return train_dataloader

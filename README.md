@@ -44,6 +44,36 @@ bash experiments/beauty.bash
 
 2. The log and results will be saved in the folder `log/`. The checkpoint will be saved in the folder `saved/`.
 
+## Clean model entry
+
+This branch adds a simplified model entry, `llmesr_clean`, that keeps the original data files but removes the experimental graph/cross-view branches from the main path.
+
+Required files stay under `data/<dataset>/handled/`:
+
+```
+inter.txt
+itm_emb_np.pkl
+pca64_itm_emb_np.pkl
+```
+
+`sim_user_100.pkl` is only required when `--use_align_loss` is enabled.
+
+Example:
+
+```
+python main.py \
+  --model_name llmesr_clean \
+  --dataset yelp \
+  --fusion sum \
+  --hidden_size 64
+```
+
+Before training, you can check the data files with:
+
+```
+python scripts/check_data.py --dataset yelp
+```
+
 ## Citation
 
 If the code and the paper are useful for you, it is appreciable to cite our paper:

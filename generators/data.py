@@ -173,10 +173,6 @@ class Seq2SeqDataset(Dataset):
 
         inter = self.data[index]
 
-        print(inter)
-        print("=================================================")
-
-
         non_neg = copy.deepcopy(inter)
         
         seq = np.zeros([self.max_len], dtype=np.int32)
@@ -436,4 +432,3 @@ class BertRecTrainDatasetAllUser(Dataset):
         positions = np.array(positions)
 
         return seq, positions
-

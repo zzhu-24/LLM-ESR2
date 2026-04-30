@@ -6,6 +6,7 @@ from utils.earlystop import EarlyStoppingNew
 from utils.utils import get_n_params
 # from models.LLMESR import LLMESR_SASRec, LLMESR_Bert4Rec, LLMESR_GRU4Rec
 from models.LLMESR import *
+from models.clean_llmesr import LLMESRClean
 
 
 
@@ -56,6 +57,8 @@ class Trainer(object):
             self.model = LLMESR_Bert4Rec(self.user_num, self.item_num, self.device, self.args)
         elif self.args.model_name == "llmesr_colmod":
             self.model = LLMESR_ColMod(self.user_num, self.item_num, self.device, self.args)
+        elif self.args.model_name == "llmesr_clean":
+            self.model = LLMESRClean(self.user_num, self.item_num, self.device, self.args)
         else:
             raise ValueError
         
@@ -195,5 +198,4 @@ class Trainer(object):
         freeze_num = total_num - trainable_num
 
         return freeze_num, trainable_num
-
 
