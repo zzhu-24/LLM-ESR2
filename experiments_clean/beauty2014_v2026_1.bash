@@ -21,8 +21,8 @@ do
     --trm_num 2 \
     --num_heads 1 \
     --dropout_rate 0.5 \
-    --max_len 200 \
-    --train_batch_size 256 \
+    --max_len 20 \
+    --train_batch_size 2048 \
     --test_neg 100 \
     --lr 0.001 \
     --num_train_epochs 200 \
