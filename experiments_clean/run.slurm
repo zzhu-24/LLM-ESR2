@@ -9,9 +9,14 @@
 #SBATCH --gres=gpu:1                    # 若使用2块卡，则gres=gpu:2
 #SBATCH --mail-type=end                 # 设置邮件通知类型，可选all, end, fail, begin等
 #SBATCH --mail-user=your@1993604693@qq.com   # 设置通知邮箱
-#SBATCH --output=slurm_results/beauty2014/%j.out                 # 设置标准输出的文件路径
-#SBATCH --error=slurm_results/beauty2014/%j.err                  # 设置标准错误的文件路径
+#SBATCH --output=slurm_results/%x/%j.out                 # 设置标准输出的文件路径
+#SBATCH --error=slurm_results/%x/%j.err                  # 设置标准错误的文件路径
 
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate llmesr
-bash /home/zhuzhehua/2025/LLM-ESR2/experiments_clean/beauty2014_v2026_1.bash
+
+dataset=${1:-${DATASET:-beauty2014}}
+repo_dir=${REPO_DIR:-/home/zhuzhehua/2025/LLM-ESR2}
+
+echo "Running V2026-1 experiment on dataset: ${dataset}"
+bash "${repo_dir}/experiments_clean/beauty2014_v2026_1.bash" "${dataset}"

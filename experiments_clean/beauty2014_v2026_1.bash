@@ -1,5 +1,5 @@
 gpu_id=0
-dataset="beauty2014"
+dataset=${1:-${DATASET:-beauty2014}}
 seed_list=(42 43 44)
 
 for seed in "${seed_list[@]}"
