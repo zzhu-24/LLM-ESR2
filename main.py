@@ -92,10 +92,10 @@ parser.add_argument("--backbone",
                     type=str,
                     help="the sequential recommendation backbone for llmesr_clean")
 parser.add_argument("--fusion",
-                    default="sum",
+                    default="concat",
                     choices=["sum", "concat", "gate"],
                     type=str,
-                    help="how llmesr_clean fuses ID and LLM item views")
+                    help="how llmesr_clean combines ID and LLM views for scoring")
 parser.add_argument("--trm_num",
                     default=2,
                     type=int,
@@ -185,6 +185,10 @@ parser.add_argument("--use_cross_att",
                     default=False,
                     action="store_true",
                     help="legacy alias for enabling cross-attention adapter")
+parser.add_argument("--use_cross_attn",
+                    default=False,
+                    action="store_true",
+                    help="alias for enabling cross-attention adapter in llmesr_clean")
 parser.add_argument("--adapter_type",
                     default="cross_att",
                     choices=["cross_att", "mlp"],
@@ -214,10 +218,39 @@ parser.add_argument("--pair_loss_weight",
                     default=0.1,
                     type=float,
                     help="the weight of the pairwise alignment loss")
+parser.add_argument("--use_pair_loss",
+                    default=False,
+                    action="store_true",
+                    help="whether llmesr_clean aligns ID and LLM token representations")
 parser.add_argument("--collab_llm_ratio",
                     default=1.0,
                     type=float,
                     help="weight of the id_loss when added to the llm loss")
+parser.add_argument("--use_graph",
+                    default=True,
+                    action=argparse.BooleanOptionalAction,
+                    help="whether llmesr_clean applies ColMod-style graph enhancement")
+parser.add_argument("--use_co_graph",
+                    default=True,
+                    action=argparse.BooleanOptionalAction,
+                    help="whether llmesr_clean uses the item co-occurrence graph")
+parser.add_argument("--use_modality_graph",
+                    default=True,
+                    action=argparse.BooleanOptionalAction,
+                    help="whether llmesr_clean uses the LLM modality graph")
+parser.add_argument("--graph_mix",
+                    default="intersection",
+                    choices=["intersection", "union", "modality", "collab"],
+                    type=str,
+                    help="how llmesr_clean mixes collaborative and modality graphs")
+parser.add_argument("--hgc_layers",
+                    default=2,
+                    type=int,
+                    help="the number of graph propagation layers in llmesr_clean")
+parser.add_argument("--modality_threshold",
+                    default=0.7,
+                    type=float,
+                    help="cosine threshold for the modality graph in llmesr_clean")
 parser.add_argument("--sim_user_num",
                     default=10,
                     type=int,

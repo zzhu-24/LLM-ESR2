@@ -3,13 +3,15 @@ import pickle
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from models.clean_backbones import CleanSASRecBackbone
+from models.utils import Contrastive_Loss2, MLPAdapter, Multi_CrossAttention
 from utils.paths import get_dataset_paths
 
 
 class LLMESRClean(nn.Module):
-    """Clean LLM-ESR variant: dual item views, one SR backbone, optional user alignment."""
+    """Clean ColMod-style LLM-ESR with explicit dual views and optional graph/adapters."""
 
     def __init__(self, user_num, item_num, device, args):
         super().__init__()
@@ -18,11 +20,34 @@ class LLMESRClean(nn.Module):
         self.dev = device
         self.hidden_size = args.hidden_size
         self.fusion = args.fusion
-        self.use_align_loss = args.use_align_loss
         self.alpha = args.alpha
+        self.beta = args.beta
+        self.collab_llm_ratio = args.collab_llm_ratio
+        self.use_align_loss = args.use_align_loss
+        self.item_reg = args.item_reg
+        self.use_pair_loss = getattr(args, "use_pair_loss", False)
+        self.pair_loss_weight = args.pair_loss_weight
+        self.user_sim_func = args.user_sim_func
+        self.use_cross_att = (
+            getattr(args, "use_adapter", False)
+            or getattr(args, "use_cross_att", False)
+            or getattr(args, "use_cross_attn", False)
+        )
+        self.adapter_type = getattr(args, "adapter_type", "cross_att")
+        self.use_graph = getattr(args, "use_graph", True)
+        self.use_co_graph = getattr(args, "use_co_graph", True)
+        self.use_modality_graph = getattr(args, "use_modality_graph", True)
+        self.hgc_layers = getattr(args, "hgc_layers", 2)
+        self.modality_threshold = getattr(args, "modality_threshold", 0.7)
+        self.graph_mix = getattr(args, "graph_mix", "intersection")
+        self.split_backbone = getattr(args, "split_backbone", False)
 
-        if self.fusion not in {"sum", "concat", "gate"}:
+        if self.fusion not in {"concat", "sum", "gate"}:
             raise ValueError(f"Unsupported fusion: {self.fusion}")
+        if self.user_sim_func not in {"cl", "kd"}:
+            raise ValueError(f"Unsupported user_sim_func: {self.user_sim_func}")
+        if self.graph_mix not in {"intersection", "union", "modality", "collab"}:
+            raise ValueError(f"Unsupported graph_mix: {self.graph_mix}")
 
         paths = get_dataset_paths(args.dataset, args.inter_file)
         id_weight = self._load_item_embedding(paths.id_item_emb, item_num)
@@ -33,28 +58,52 @@ class LLMESRClean(nn.Module):
         self.id_adapter = self._make_projection(id_weight.size(1), args.hidden_size)
         self.llm_adapter = self._make_projection(llm_weight.size(1), args.hidden_size)
 
-        if self.fusion == "concat":
-            model_dim = 2 * args.hidden_size
-        else:
-            model_dim = args.hidden_size
+        self.pos_emb = nn.Embedding(args.max_len + 100, args.hidden_size)
+        self.emb_dropout = nn.Dropout(args.dropout_rate)
+        self.hgc_dropout = nn.Dropout(args.dropout_rate)
 
-        self.gate = None
-        if self.fusion == "gate":
+        if self.use_cross_att:
+            self.id_cross_adapter = self._make_view_adapter(args)
+            self.llm_cross_adapter = self._make_view_adapter(args)
+        else:
+            self.id_cross_adapter = None
+            self.llm_cross_adapter = None
+
+        self.id_backbone = CleanSASRecBackbone(
+            hidden_size=args.hidden_size,
+            num_layers=args.trm_num,
+            num_heads=args.num_heads,
+            dropout_rate=args.dropout_rate,
+        )
+        self.llm_backbone = (
+            CleanSASRecBackbone(
+                hidden_size=args.hidden_size,
+                num_layers=args.trm_num,
+                num_heads=args.num_heads,
+                dropout_rate=args.dropout_rate,
+            )
+            if self.split_backbone
+            else self.id_backbone
+        )
+
+        if self.fusion == "concat":
+            self.output_dim = 2 * args.hidden_size
+            self.gate = None
+        elif self.fusion == "sum":
+            self.output_dim = args.hidden_size
+            self.gate = None
+        else:
+            self.output_dim = args.hidden_size
             self.gate = nn.Sequential(
                 nn.Linear(2 * args.hidden_size, args.hidden_size),
                 nn.Sigmoid(),
             )
 
-        self.pos_emb = nn.Embedding(args.max_len + 100, model_dim)
-        self.emb_dropout = nn.Dropout(args.dropout_rate)
-        self.backbone = CleanSASRecBackbone(
-            hidden_size=model_dim,
-            num_layers=args.trm_num,
-            num_heads=args.num_heads,
-            dropout_rate=args.dropout_rate,
-        )
+        self.cooccurrence = self._load_cooccurrence(paths.frequency)
         self.loss_func = nn.BCEWithLogitsLoss()
-        self.align_loss = nn.MSELoss()
+        self.align_loss = Contrastive_Loss2(args.tau) if self.user_sim_func == "cl" else nn.MSELoss()
+        self.pair_loss = nn.MSELoss()
+        self.reg_loss = Contrastive_Loss2(args.tau)
 
         self._init_weights()
 
@@ -71,8 +120,7 @@ class LLMESRClean(nn.Module):
         if emb.shape[0] == item_num:
             emb = np.vstack([np.zeros((1, emb.shape[1]), dtype=np.float32), emb])
         if emb.shape[0] < expected_rows:
-            pad_rows = expected_rows - emb.shape[0]
-            emb = np.vstack([emb, np.zeros((pad_rows, emb.shape[1]), dtype=np.float32)])
+            emb = np.vstack([emb, np.zeros((expected_rows - emb.shape[0], emb.shape[1]), dtype=np.float32)])
         if emb.shape[0] > expected_rows:
             emb = emb[:expected_rows]
 
@@ -84,14 +132,48 @@ class LLMESRClean(nn.Module):
     def _make_projection(input_dim, hidden_size):
         if input_dim == hidden_size:
             return nn.Identity()
+        mid_dim = max(hidden_size, input_dim // 2)
         return nn.Sequential(
-            nn.Linear(input_dim, max(hidden_size, input_dim // 2)),
+            nn.Linear(input_dim, mid_dim),
             nn.ReLU(),
-            nn.Linear(max(hidden_size, input_dim // 2), hidden_size),
+            nn.Linear(mid_dim, hidden_size),
         )
 
+    def _make_view_adapter(self, args):
+        if self.adapter_type == "mlp":
+            return MLPAdapter(args.hidden_size, args.dropout_rate)
+        return Multi_CrossAttention(args.hidden_size, args.hidden_size, args.num_heads)
+
+    @staticmethod
+    def _load_cooccurrence(path):
+        if not path.exists():
+            return {}
+
+        cooccurrence = {}
+        with path.open("r") as f:
+            for line in f:
+                parts = line.strip().split("\t")
+                if len(parts) != 3:
+                    continue
+                item_a, item_b, freq = int(parts[0]), int(parts[1]), float(parts[2])
+                cooccurrence.setdefault(item_a, {})[item_b] = freq
+                cooccurrence.setdefault(item_b, {})[item_a] = freq
+        return cooccurrence
+
     def _init_weights(self):
-        for module in [self.id_adapter, self.llm_adapter, self.gate, self.pos_emb, self.backbone]:
+        modules = [
+            self.id_adapter,
+            self.llm_adapter,
+            self.id_cross_adapter,
+            self.llm_cross_adapter,
+            self.id_backbone,
+            self.gate,
+            self.pos_emb,
+        ]
+        if self.split_backbone:
+            modules.append(self.llm_backbone)
+
+        for module in modules:
             if module is None or isinstance(module, nn.Identity):
                 continue
             for name, param in module.named_parameters():
@@ -105,25 +187,94 @@ class LLMESRClean(nn.Module):
         llm_emb = self.llm_adapter(self.llm_item_emb(item_ids))
         return id_emb, llm_emb
 
-    def _get_embedding(self, item_ids):
-        id_emb, llm_emb = self._item_views(item_ids)
-        if self.fusion == "sum":
-            return id_emb + llm_emb
+    def _combine_views(self, id_repr, llm_repr):
         if self.fusion == "concat":
-            return torch.cat([id_emb, llm_emb], dim=-1)
+            return torch.cat([id_repr, llm_repr], dim=-1)
+        if self.fusion == "sum":
+            return id_repr + llm_repr
 
-        gate = self.gate(torch.cat([id_emb, llm_emb], dim=-1))
-        return gate * id_emb + (1.0 - gate) * llm_emb
+        gate = self.gate(torch.cat([id_repr, llm_repr], dim=-1))
+        return gate * id_repr + (1.0 - gate) * llm_repr
 
-    def log2feats(self, seq, positions):
-        seq_emb = self._get_embedding(seq)
+    def _build_co_graph(self, item_seq):
+        batch_size, seq_len = item_seq.shape
+        adj = torch.zeros(batch_size, seq_len, seq_len, device=item_seq.device)
+        if not self.cooccurrence:
+            return adj
+
+        for batch_idx in range(batch_size):
+            items = item_seq[batch_idx].detach().cpu().tolist()
+            for row, item_a in enumerate(items):
+                neighbors = self.cooccurrence.get(item_a)
+                if not neighbors:
+                    continue
+                for col, item_b in enumerate(items):
+                    if row != col and item_b in neighbors:
+                        adj[batch_idx, row, col] = neighbors[item_b]
+        return self._normalize_graph(adj)
+
+    def _build_modality_graph(self, llm_seq):
+        sim = torch.matmul(F.normalize(llm_seq, p=2, dim=-1), F.normalize(llm_seq, p=2, dim=-1).transpose(-1, -2))
+        sim = (sim > self.modality_threshold).float()
+        return self._normalize_graph(sim)
+
+    @staticmethod
+    def _normalize_graph(adj):
+        return adj / (adj.sum(dim=-1, keepdim=True) + 1e-8)
+
+    def _mix_graphs(self, co_adj, modality_adj):
+        if self.graph_mix == "collab":
+            return co_adj
+        if self.graph_mix == "modality":
+            return modality_adj
+        if self.graph_mix == "union":
+            return torch.max(co_adj, modality_adj)
+        return torch.min(co_adj, modality_adj)
+
+    def _graph_convolution(self, adj, seq_emb):
+        hidden = self.hgc_dropout(seq_emb)
+        for _ in range(self.hgc_layers):
+            hidden = torch.bmm(adj, hidden) + hidden
+        return hidden
+
+    def _add_position(self, item_ids, seq_emb, positions):
         seq_emb = seq_emb * (seq_emb.size(-1) ** 0.5)
         seq_emb = seq_emb + self.pos_emb(positions.long())
         seq_emb = self.emb_dropout(seq_emb)
-        return self.backbone(seq_emb, seq)
+        return seq_emb.masked_fill(item_ids.eq(0).unsqueeze(-1), 0.0)
+
+    def _encode_views(self, seq, positions):
+        id_seq, llm_seq = self._item_views(seq)
+        id_seq = self._add_position(seq, id_seq, positions)
+        llm_seq = self._add_position(seq, llm_seq, positions)
+
+        if self.use_graph:
+            co_adj = self._build_co_graph(seq) if self.use_co_graph else torch.zeros(seq.size(0), seq.size(1), seq.size(1), device=seq.device)
+            modality_adj = self._build_modality_graph(llm_seq) if self.use_modality_graph else co_adj
+            id_seq = self._graph_convolution(co_adj, id_seq)
+            llm_seq = self._graph_convolution(self._mix_graphs(co_adj, modality_adj), llm_seq)
+
+        if self.use_cross_att:
+            id_source, llm_source = id_seq, llm_seq
+            id_seq = self.id_cross_adapter(llm_source, id_source, seq)
+            llm_seq = self.llm_cross_adapter(id_source, llm_source, seq)
+
+        id_feats = self.id_backbone(id_seq, seq)
+        llm_feats = self.llm_backbone(llm_seq, seq)
+        return id_feats, llm_feats
+
+    def log2feats(self, seq, positions, return_views=False):
+        id_feats, llm_feats = self._encode_views(seq, positions)
+        if return_views:
+            return id_feats, llm_feats
+        return self._combine_views(id_feats, llm_feats)
+
+    def _get_embedding(self, item_ids):
+        return self._combine_views(*self._item_views(item_ids))
 
     def forward(self, seq, pos, neg, positions, **kwargs):
-        log_feats = self.log2feats(seq, positions)
+        id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+        log_feats = self._combine_views(id_feats, llm_feats)
         pos_emb = self._get_embedding(pos)
         neg_emb = self._get_embedding(neg)
 
@@ -134,20 +285,41 @@ class LLMESRClean(nn.Module):
         loss = self.loss_func(pos_logits[valid_mask], torch.ones_like(pos_logits[valid_mask]))
         loss = loss + self.loss_func(neg_logits[valid_mask], torch.zeros_like(neg_logits[valid_mask]))
 
+        if self.use_pair_loss:
+            loss = loss + self.pair_loss_weight * self.pair_loss(id_feats[valid_mask], llm_feats[valid_mask])
         if self.use_align_loss and "sim_seq" in kwargs and "sim_positions" in kwargs:
-            loss = loss + self.alpha * self._user_align_loss(seq, positions, kwargs)
+            loss = loss + self.alpha * self._user_align_loss(seq, positions, id_feats, llm_feats, kwargs)
+        if self.item_reg:
+            loss = loss + self.beta * self._item_regularization(seq)
 
         return loss
 
-    def _user_align_loss(self, seq, positions, kwargs):
-        user_repr = self.log2feats(seq, positions)[:, -1, :]
+    def _user_align_loss(self, seq, positions, id_feats, llm_feats, kwargs):
         sim_seq = kwargs["sim_seq"].reshape(-1, seq.size(1))
         sim_positions = kwargs["sim_positions"].reshape(-1, seq.size(1))
         sim_num = kwargs["sim_seq"].size(1)
+
         with torch.no_grad():
-            sim_repr = self.log2feats(sim_seq, sim_positions)[:, -1, :]
-            sim_repr = sim_repr.reshape(seq.size(0), sim_num, -1).mean(dim=1)
-        return self.align_loss(user_repr, sim_repr)
+            sim_id_feats, sim_llm_feats = self.log2feats(sim_seq, sim_positions, return_views=True)
+            sim_llm_repr = sim_llm_feats[:, -1, :].reshape(seq.size(0), sim_num, -1).mean(dim=1)
+
+            if "sim_collab_seq" in kwargs and "sim_collab_positions" in kwargs:
+                sim_collab_seq = kwargs["sim_collab_seq"].reshape(-1, seq.size(1))
+                sim_collab_positions = kwargs["sim_collab_positions"].reshape(-1, seq.size(1))
+                collab_num = kwargs["sim_collab_seq"].size(1)
+                sim_id_feats, _ = self.log2feats(sim_collab_seq, sim_collab_positions, return_views=True)
+                sim_id_repr = sim_id_feats[:, -1, :].reshape(seq.size(0), collab_num, -1).mean(dim=1)
+            else:
+                sim_id_repr = sim_id_feats[:, -1, :].reshape(seq.size(0), sim_num, -1).mean(dim=1)
+
+        id_loss = self.align_loss(id_feats[:, -1, :], sim_id_repr)
+        llm_loss = self.align_loss(llm_feats[:, -1, :], sim_llm_repr)
+        return self.collab_llm_ratio * id_loss + llm_loss
+
+    def _item_regularization(self, seq):
+        item_ids = torch.masked_select(seq, seq > 0)
+        id_emb, llm_emb = self._item_views(item_ids)
+        return self.reg_loss(llm_emb, id_emb)
 
     def predict(self, seq, item_indices, positions, **kwargs):
         final_feat = self.log2feats(seq, positions)[:, -1, :]
@@ -155,4 +327,5 @@ class LLMESRClean(nn.Module):
         return item_emb.matmul(final_feat.unsqueeze(-1)).squeeze(-1)
 
     def get_user_emb(self, seq, positions, **kwargs):
-        return self.log2feats(seq, positions)[:, -1, :]
+        id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+        return self._combine_views(id_feats[:, -1, :], llm_feats[:, -1, :])
