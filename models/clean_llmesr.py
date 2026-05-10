@@ -40,6 +40,10 @@ class LLMESRClean(nn.Module):
         self.hgc_layers = getattr(args, "hgc_layers", 2)
         self.modality_threshold = getattr(args, "modality_threshold", 0.7)
         self.graph_mix = getattr(args, "graph_mix", "intersection")
+        self.graph_filter = getattr(args, "graph_filter", "none")
+        self.use_intent_gap = getattr(args, "use_intent_gap", False) or getattr(args, "dynamic_align", False)
+        self.dynamic_align = getattr(args, "dynamic_align", False)
+        self.dynamic_align_scale = getattr(args, "dynamic_align_scale", 1.0)
         self.split_backbone = getattr(args, "split_backbone", False)
 
         if self.fusion not in {"concat", "sum", "gate"}:
@@ -48,6 +52,8 @@ class LLMESRClean(nn.Module):
             raise ValueError(f"Unsupported user_sim_func: {self.user_sim_func}")
         if self.graph_mix not in {"intersection", "union", "modality", "collab"}:
             raise ValueError(f"Unsupported graph_mix: {self.graph_mix}")
+        if self.graph_filter not in {"none", "residual", "positive_residual", "normalized_residual"}:
+            raise ValueError(f"Unsupported graph_filter: {self.graph_filter}")
 
         paths = get_dataset_paths(args.dataset, args.inter_file)
         id_weight = self._load_item_embedding(paths.id_item_emb, item_num)
@@ -57,6 +63,18 @@ class LLMESRClean(nn.Module):
         self.llm_item_emb = nn.Embedding.from_pretrained(llm_weight, freeze=args.freeze, padding_idx=0)
         self.id_adapter = self._make_projection(id_weight.size(1), args.hidden_size)
         self.llm_adapter = self._make_projection(llm_weight.size(1), args.hidden_size)
+        if self.use_intent_gap:
+            sem_user_weight = self._load_user_embedding(paths.user_emb, user_num)
+            collab_user_weight = self._load_user_embedding(paths.collab_user_emb, user_num)
+            self.sem_user_emb = nn.Embedding.from_pretrained(sem_user_weight, freeze=True)
+            self.collab_user_emb = nn.Embedding.from_pretrained(collab_user_weight, freeze=True)
+            self.sem_user_adapter = self._make_projection(sem_user_weight.size(1), args.hidden_size)
+            self.collab_user_adapter = self._make_projection(collab_user_weight.size(1), args.hidden_size)
+        else:
+            self.sem_user_emb = None
+            self.collab_user_emb = None
+            self.sem_user_adapter = None
+            self.collab_user_adapter = None
 
         self.pos_emb = nn.Embedding(args.max_len + 100, args.hidden_size)
         self.emb_dropout = nn.Dropout(args.dropout_rate)
@@ -129,6 +147,22 @@ class LLMESRClean(nn.Module):
         return torch.tensor(emb, dtype=torch.float32)
 
     @staticmethod
+    def _load_user_embedding(path, user_num):
+        if not path.exists():
+            raise FileNotFoundError(f"Missing user embedding file: {path}")
+
+        with path.open("rb") as f:
+            emb = pickle.load(f)
+        emb = np.asarray(emb, dtype=np.float32)
+
+        if emb.shape[0] < user_num:
+            emb = np.vstack([emb, np.zeros((user_num - emb.shape[0], emb.shape[1]), dtype=np.float32)])
+        if emb.shape[0] > user_num:
+            emb = emb[:user_num]
+
+        return torch.tensor(emb, dtype=torch.float32)
+
+    @staticmethod
     def _make_projection(input_dim, hidden_size):
         if input_dim == hidden_size:
             return nn.Identity()
@@ -164,6 +198,8 @@ class LLMESRClean(nn.Module):
         modules = [
             self.id_adapter,
             self.llm_adapter,
+            self.sem_user_adapter,
+            self.collab_user_adapter,
             self.id_cross_adapter,
             self.llm_cross_adapter,
             self.id_backbone,
@@ -222,6 +258,10 @@ class LLMESRClean(nn.Module):
     def _normalize_graph(adj):
         return adj / (adj.sum(dim=-1, keepdim=True) + 1e-8)
 
+    @staticmethod
+    def _normalize_signed_graph(adj):
+        return adj / (adj.abs().sum(dim=-1, keepdim=True) + 1e-8)
+
     def _mix_graphs(self, co_adj, modality_adj):
         if self.graph_mix == "collab":
             return co_adj
@@ -230,6 +270,20 @@ class LLMESRClean(nn.Module):
         if self.graph_mix == "union":
             return torch.max(co_adj, modality_adj)
         return torch.min(co_adj, modality_adj)
+
+    def _filter_co_graph(self, co_adj, modality_adj):
+        if self.graph_filter == "none":
+            return co_adj
+
+        if self.graph_filter == "normalized_residual":
+            co_adj = self._normalize_graph(co_adj)
+            modality_adj = self._normalize_graph(modality_adj)
+
+        residual = co_adj - modality_adj
+        if self.graph_filter in {"positive_residual", "normalized_residual"}:
+            residual = torch.relu(residual)
+            return self._normalize_graph(residual)
+        return self._normalize_signed_graph(residual)
 
     def _graph_convolution(self, adj, seq_emb):
         hidden = self.hgc_dropout(seq_emb)
@@ -251,8 +305,9 @@ class LLMESRClean(nn.Module):
         if self.use_graph:
             co_adj = self._build_co_graph(seq) if self.use_co_graph else torch.zeros(seq.size(0), seq.size(1), seq.size(1), device=seq.device)
             modality_adj = self._build_modality_graph(llm_seq) if self.use_modality_graph else co_adj
-            id_seq = self._graph_convolution(co_adj, id_seq)
-            llm_seq = self._graph_convolution(self._mix_graphs(co_adj, modality_adj), llm_seq)
+            filtered_co_adj = self._filter_co_graph(co_adj, modality_adj)
+            id_seq = self._graph_convolution(filtered_co_adj, id_seq)
+            llm_seq = self._graph_convolution(self._mix_graphs(filtered_co_adj, modality_adj), llm_seq)
 
         if self.use_cross_att:
             id_source, llm_source = id_seq, llm_seq
@@ -288,11 +343,23 @@ class LLMESRClean(nn.Module):
         if self.use_pair_loss:
             loss = loss + self.pair_loss_weight * self.pair_loss(id_feats[valid_mask], llm_feats[valid_mask])
         if self.use_align_loss and "sim_seq" in kwargs and "sim_positions" in kwargs:
-            loss = loss + self.alpha * self._user_align_loss(seq, positions, id_feats, llm_feats, kwargs)
+            align_weight = self._dynamic_align_weight(kwargs.get("user_id"), seq.device)
+            loss = loss + align_weight * self._user_align_loss(seq, positions, id_feats, llm_feats, kwargs)
         if self.item_reg:
             loss = loss + self.beta * self._item_regularization(seq)
 
         return loss
+
+    def _dynamic_align_weight(self, user_id, device):
+        if not self.dynamic_align or user_id is None or self.sem_user_emb is None:
+            return self.alpha
+
+        user_id = user_id.long().clamp(min=0, max=self.user_num - 1)
+        sem_user = self.sem_user_adapter(self.sem_user_emb(user_id))
+        collab_user = self.collab_user_adapter(self.collab_user_emb(user_id))
+        gap = 1.0 - F.cosine_similarity(sem_user, collab_user, dim=-1)
+        weight = (2.0 * torch.sigmoid(-self.dynamic_align_scale * gap)).mean()
+        return self.alpha * weight
 
     def _user_align_loss(self, seq, positions, id_feats, llm_feats, kwargs):
         sim_seq = kwargs["sim_seq"].reshape(-1, seq.size(1))

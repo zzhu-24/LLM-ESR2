@@ -251,6 +251,23 @@ parser.add_argument("--modality_threshold",
                     default=0.7,
                     type=float,
                     help="cosine threshold for the modality graph in llmesr_clean")
+parser.add_argument("--graph_filter",
+                    default="none",
+                    choices=["none", "residual", "positive_residual", "normalized_residual"],
+                    type=str,
+                    help="how llmesr_clean filters semantic overlap out of the co-occurrence graph")
+parser.add_argument("--use_intent_gap",
+                    default=False,
+                    action="store_true",
+                    help="whether llmesr_clean loads fixed semantic/collaborative user embeddings")
+parser.add_argument("--dynamic_align",
+                    default=False,
+                    action="store_true",
+                    help="whether llmesr_clean scales alignment loss by the fixed user embedding gap")
+parser.add_argument("--dynamic_align_scale",
+                    default=1.0,
+                    type=float,
+                    help="slope for converting user embedding gap into dynamic alignment weights")
 parser.add_argument("--sim_user_num",
                     default=10,
                     type=int,

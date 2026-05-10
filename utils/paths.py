@@ -11,6 +11,8 @@ class DatasetPaths:
     id_item_emb: Path
     sim_users: Path
     frequency: Path
+    user_emb: Path
+    collab_user_emb: Path
 
 
 def get_dataset_paths(dataset: str, inter_file: str = "inter") -> DatasetPaths:
@@ -24,4 +26,6 @@ def get_dataset_paths(dataset: str, inter_file: str = "inter") -> DatasetPaths:
         id_item_emb=handled / "pca64_itm_emb_np.pkl",
         sim_users=handled / "sim_user_100.pkl",
         frequency=handled / "frequency.txt",
+        user_emb=handled / "usr_emb_np.pkl",
+        collab_user_emb=handled / "usr_emb_collab_np.pkl",
     )
