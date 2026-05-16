@@ -268,6 +268,10 @@ parser.add_argument("--dynamic_align_scale",
                     default=1.0,
                     type=float,
                     help="slope for converting user embedding gap into dynamic alignment weights")
+parser.add_argument("--colmod_compat",
+                    default=False,
+                    action="store_true",
+                    help="enable llmesr_clean compatibility behavior for the original llmesr_colmod path")
 parser.add_argument("--sim_user_num",
                     default=10,
                     type=int,

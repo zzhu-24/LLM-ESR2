@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.clean_backbones import CleanSASRecBackbone
+from models.SASRec import SASRecBackbone
 from models.utils import Contrastive_Loss2, MLPAdapter, Multi_CrossAttention
 from utils.paths import get_dataset_paths
 
@@ -44,6 +45,7 @@ class LLMESRClean(nn.Module):
         self.use_intent_gap = getattr(args, "use_intent_gap", False) or getattr(args, "dynamic_align", False)
         self.dynamic_align = getattr(args, "dynamic_align", False)
         self.dynamic_align_scale = getattr(args, "dynamic_align_scale", 1.0)
+        self.colmod_compat = getattr(args, "colmod_compat", False)
         self.split_backbone = getattr(args, "split_backbone", False)
 
         if self.fusion not in {"concat", "sum", "gate"}:
@@ -62,7 +64,11 @@ class LLMESRClean(nn.Module):
         self.id_item_emb = nn.Embedding.from_pretrained(id_weight, freeze=False, padding_idx=0)
         self.llm_item_emb = nn.Embedding.from_pretrained(llm_weight, freeze=args.freeze, padding_idx=0)
         self.id_adapter = self._make_projection(id_weight.size(1), args.hidden_size)
-        self.llm_adapter = self._make_projection(llm_weight.size(1), args.hidden_size)
+        self.llm_adapter = (
+            self._make_colmod_projection(llm_weight.size(1), args.hidden_size)
+            if self.colmod_compat
+            else self._make_projection(llm_weight.size(1), args.hidden_size)
+        )
         if self.use_intent_gap:
             sem_user_weight = self._load_user_embedding(paths.user_emb, user_num)
             collab_user_weight = self._load_user_embedding(paths.collab_user_emb, user_num)
@@ -87,19 +93,9 @@ class LLMESRClean(nn.Module):
             self.id_cross_adapter = None
             self.llm_cross_adapter = None
 
-        self.id_backbone = CleanSASRecBackbone(
-            hidden_size=args.hidden_size,
-            num_layers=args.trm_num,
-            num_heads=args.num_heads,
-            dropout_rate=args.dropout_rate,
-        )
+        self.id_backbone = self._make_backbone(args)
         self.llm_backbone = (
-            CleanSASRecBackbone(
-                hidden_size=args.hidden_size,
-                num_layers=args.trm_num,
-                num_heads=args.num_heads,
-                dropout_rate=args.dropout_rate,
-            )
+            self._make_backbone(args)
             if self.split_backbone
             else self.id_backbone
         )
@@ -173,6 +169,25 @@ class LLMESRClean(nn.Module):
             nn.Linear(mid_dim, hidden_size),
         )
 
+    @staticmethod
+    def _make_colmod_projection(input_dim, hidden_size):
+        if input_dim == hidden_size:
+            return nn.Identity()
+        return nn.Sequential(
+            nn.Linear(input_dim, int(input_dim / 2)),
+            nn.Linear(int(input_dim / 2), hidden_size),
+        )
+
+    def _make_backbone(self, args):
+        if self.colmod_compat:
+            return SASRecBackbone(self.dev, args)
+        return CleanSASRecBackbone(
+            hidden_size=args.hidden_size,
+            num_layers=args.trm_num,
+            num_heads=args.num_heads,
+            dropout_rate=args.dropout_rate,
+        )
+
     def _make_view_adapter(self, args):
         if self.adapter_type == "mlp":
             return MLPAdapter(args.hidden_size, args.dropout_rate)
@@ -224,6 +239,8 @@ class LLMESRClean(nn.Module):
         return id_emb, llm_emb
 
     def _combine_views(self, id_repr, llm_repr):
+        if self.colmod_compat:
+            id_repr = torch.zeros_like(id_repr, device=id_repr.device)
         if self.fusion == "concat":
             return torch.cat([id_repr, llm_repr], dim=-1)
         if self.fusion == "sum":
@@ -306,8 +323,14 @@ class LLMESRClean(nn.Module):
             co_adj = self._build_co_graph(seq) if self.use_co_graph else torch.zeros(seq.size(0), seq.size(1), seq.size(1), device=seq.device)
             modality_adj = self._build_modality_graph(llm_seq) if self.use_modality_graph else co_adj
             filtered_co_adj = self._filter_co_graph(co_adj, modality_adj)
-            id_seq = self._graph_convolution(filtered_co_adj, id_seq)
-            llm_seq = self._graph_convolution(self._mix_graphs(filtered_co_adj, modality_adj), llm_seq)
+            mixed_adj = self._mix_graphs(filtered_co_adj, modality_adj)
+            if self.colmod_compat:
+                with torch.no_grad():
+                    id_seq = self._graph_convolution(filtered_co_adj, id_seq)
+                    llm_seq = self._graph_convolution(mixed_adj, llm_seq)
+            else:
+                id_seq = self._graph_convolution(filtered_co_adj, id_seq)
+                llm_seq = self._graph_convolution(mixed_adj, llm_seq)
 
         if self.use_cross_att:
             id_source, llm_source = id_seq, llm_seq
@@ -316,6 +339,8 @@ class LLMESRClean(nn.Module):
 
         id_feats = self.id_backbone(id_seq, seq)
         llm_feats = self.llm_backbone(llm_seq, seq)
+        if self.colmod_compat:
+            id_feats = torch.zeros_like(id_feats, device=id_feats.device)
         return id_feats, llm_feats
 
     def log2feats(self, seq, positions, return_views=False):

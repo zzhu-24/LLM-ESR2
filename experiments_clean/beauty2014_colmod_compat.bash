@@ -8,6 +8,7 @@ do
     --model_name llmesr_clean \
     --dataset ${dataset} \
     --fusion concat \
+    --colmod_compat \
     --use_align_loss \
     --enable_id \
     --alpha 0.1 \
