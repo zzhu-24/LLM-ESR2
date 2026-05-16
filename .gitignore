@@ -8,3 +8,4 @@ saved/
 !requirements.txt
 slurm_results/
 outputs/
+docs/
