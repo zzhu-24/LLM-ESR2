@@ -16,12 +16,12 @@ do
                 --model_name ${model_name} \
                 --hidden_size 64 \
                 --train_batch_size 128 \
-                --max_len 50 \
+                --max_len 20 \
                 --gpu_id ${gpu_id} \
                 --num_workers 2 \
                 --num_train_epochs 100 \
                 --seed ${seed} \
-                --check_path "mlp_no_peft" \
+                --check_path "mlp_no_peft_test" \
                 --patience 20 \
                 --ts_user ${ts_user} \
                 --ts_item ${ts_item} \
