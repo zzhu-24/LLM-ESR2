@@ -7,3 +7,4 @@ saved/
 *.log
 !requirements.txt
 slurm_results/
+Intro_problem/
