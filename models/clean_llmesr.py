@@ -64,11 +64,8 @@ class LLMESRClean(nn.Module):
         self.id_item_emb = nn.Embedding.from_pretrained(id_weight, freeze=False, padding_idx=0)
         self.llm_item_emb = nn.Embedding.from_pretrained(llm_weight, freeze=args.freeze, padding_idx=0)
         self.id_adapter = self._make_projection(id_weight.size(1), args.hidden_size)
-        self.llm_adapter = (
-            self._make_colmod_projection(llm_weight.size(1), args.hidden_size)
-            if self.colmod_compat
-            else self._make_projection(llm_weight.size(1), args.hidden_size)
-        )
+        self.llm_adapter = self._make_projection(llm_weight.size(1), args.hidden_size)
+        
         if self.use_intent_gap:
             sem_user_weight = self._load_user_embedding(paths.user_emb, user_num)
             collab_user_weight = self._load_user_embedding(paths.collab_user_emb, user_num)
@@ -239,8 +236,6 @@ class LLMESRClean(nn.Module):
         return id_emb, llm_emb
 
     def _combine_views(self, id_repr, llm_repr):
-        if self.colmod_compat:
-            id_repr = torch.zeros_like(id_repr, device=id_repr.device)
         if self.fusion == "concat":
             return torch.cat([id_repr, llm_repr], dim=-1)
         if self.fusion == "sum":
@@ -339,8 +334,6 @@ class LLMESRClean(nn.Module):
 
         id_feats = self.id_backbone(id_seq, seq)
         llm_feats = self.llm_backbone(llm_seq, seq)
-        if self.colmod_compat:
-            id_feats = torch.zeros_like(id_feats, device=id_feats.device)
         return id_feats, llm_feats
 
     def log2feats(self, seq, positions, return_views=False):
