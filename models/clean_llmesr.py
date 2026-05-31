@@ -39,7 +39,7 @@ class LLMESRClean(nn.Module):
         self.use_co_graph = getattr(args, "use_co_graph", True)
         self.use_modality_graph = getattr(args, "use_modality_graph", True)
         self.hgc_layers = getattr(args, "hgc_layers", 2)
-        self.modality_threshold = getattr(args, "modality_threshold", 0.7)
+        self.modality_threshold = getattr(args, "modality_threshold", 0.1)
         self.graph_mix = getattr(args, "graph_mix", "intersection")
         self.graph_filter = getattr(args, "graph_filter", "none")
         self.use_intent_gap = getattr(args, "use_intent_gap", False) or getattr(args, "dynamic_align", False)
