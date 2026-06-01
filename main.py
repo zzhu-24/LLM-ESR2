@@ -239,7 +239,7 @@ parser.add_argument("--use_modality_graph",
                     action=argparse.BooleanOptionalAction,
                     help="whether llmesr_clean uses the LLM modality graph")
 parser.add_argument("--graph_mix",
-                    default="intersection",
+                    default=None,
                     choices=["intersection", "union", "modality", "collab"],
                     type=str,
                     help="how llmesr_clean mixes collaborative and modality graphs")

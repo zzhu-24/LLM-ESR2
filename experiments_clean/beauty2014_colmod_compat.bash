@@ -16,11 +16,11 @@ do
     --collab_llm_ratio 1.0 \
     --hidden_size 64 \
     --trm_num 2 \
-    --num_heads 1 \
+    --num_heads 2 \
     --dropout_rate 0.5 \
     --max_len 20 \
     --freeze \
-    --train_batch_size 2048 \
+    --train_batch_size 128 \
     --test_neg 100 \
     --lr 0.001 \
     --num_train_epochs 40 \

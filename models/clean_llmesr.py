@@ -52,7 +52,7 @@ class LLMESRClean(nn.Module):
             raise ValueError(f"Unsupported fusion: {self.fusion}")
         if self.user_sim_func not in {"cl", "kd"}:
             raise ValueError(f"Unsupported user_sim_func: {self.user_sim_func}")
-        if self.graph_mix not in {"intersection", "union", "modality", "collab"}:
+        if self.graph_mix not in {None, "intersection", "union", "modality", "collab"}:
             raise ValueError(f"Unsupported graph_mix: {self.graph_mix}")
         if self.graph_filter not in {"none", "residual", "positive_residual", "normalized_residual"}:
             raise ValueError(f"Unsupported graph_filter: {self.graph_filter}")
@@ -231,7 +231,8 @@ class LLMESRClean(nn.Module):
                     nn.init.zeros_(param)
 
     def _item_views(self, item_ids):
-        id_emb = self.id_adapter(self.id_item_emb(item_ids))
+        # id_emb = self.id_adapter(self.id_item_emb(item_ids))
+        id_emb = self.id_item_emb(item_ids)
         llm_emb = self.llm_adapter(self.llm_item_emb(item_ids))
         return id_emb, llm_emb
 
@@ -275,6 +276,8 @@ class LLMESRClean(nn.Module):
         return adj / (adj.abs().sum(dim=-1, keepdim=True) + 1e-8)
 
     def _mix_graphs(self, co_adj, modality_adj):
+        if self.graph_mix is None:
+            return modality_adj
         if self.graph_mix == "collab":
             return co_adj
         if self.graph_mix == "modality":
@@ -291,7 +294,7 @@ class LLMESRClean(nn.Module):
             co_adj = self._normalize_graph(co_adj)
             modality_adj = self._normalize_graph(modality_adj)
 
-        residual = co_adj - modality_adj
+        residual = co_adj / (modality_adj + 1e-8)
         if self.graph_filter in {"positive_residual", "normalized_residual"}:
             residual = torch.relu(residual)
             return self._normalize_graph(residual)
