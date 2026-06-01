@@ -47,6 +47,7 @@ class LLMESRClean(nn.Module):
         self.dynamic_align_scale = getattr(args, "dynamic_align_scale", 1.0)
         self.colmod_compat = getattr(args, "colmod_compat", False)
         self.split_backbone = getattr(args, "split_backbone", False)
+        self.enable_id = getattr(args, "enable_id", False)
 
         if self.fusion not in {"concat", "sum", "gate"}:
             raise ValueError(f"Unsupported fusion: {self.fusion}")
@@ -64,7 +65,11 @@ class LLMESRClean(nn.Module):
         self.id_item_emb = nn.Embedding.from_pretrained(id_weight, freeze=False, padding_idx=0)
         self.llm_item_emb = nn.Embedding.from_pretrained(llm_weight, freeze=args.freeze, padding_idx=0)
         self.id_adapter = self._make_projection(id_weight.size(1), args.hidden_size)
-        self.llm_adapter = self._make_projection(llm_weight.size(1), args.hidden_size)
+        self.llm_adapter = (
+            self._make_colmod_projection(llm_weight.size(1), args.hidden_size)
+            if self.colmod_compat
+            else self._make_projection(llm_weight.size(1), args.hidden_size)
+        )
         
         if self.use_intent_gap:
             sem_user_weight = self._load_user_embedding(paths.user_emb, user_num)
@@ -188,7 +193,8 @@ class LLMESRClean(nn.Module):
     def _make_view_adapter(self, args):
         if self.adapter_type == "mlp":
             return MLPAdapter(args.hidden_size, args.dropout_rate)
-        return Multi_CrossAttention(args.hidden_size, args.hidden_size, args.num_heads)
+        head_num = 2 if self.colmod_compat else args.num_heads
+        return Multi_CrossAttention(args.hidden_size, args.hidden_size, head_num)
 
     @staticmethod
     def _load_cooccurrence(path):
@@ -316,12 +322,17 @@ class LLMESRClean(nn.Module):
         id_seq, llm_seq = self._item_views(seq)
         id_seq = self._add_position(seq, id_seq, positions)
         llm_seq = self._add_position(seq, llm_seq, positions)
+        pairwise_align_loss = 0.0
 
         if self.use_graph:
             co_adj = self._build_co_graph(seq) if self.use_co_graph else torch.zeros(seq.size(0), seq.size(1), seq.size(1), device=seq.device)
             modality_adj = self._build_modality_graph(llm_seq) if self.use_modality_graph else co_adj
-            filtered_co_adj = self._filter_co_graph(co_adj, modality_adj)
-            mixed_adj = self._mix_graphs(filtered_co_adj, modality_adj)
+            if self.colmod_compat:
+                filtered_co_adj = self._normalize_graph(co_adj / (modality_adj + 1e-8))
+                mixed_adj = modality_adj
+            else:
+                filtered_co_adj = self._filter_co_graph(co_adj, modality_adj)
+                mixed_adj = self._mix_graphs(filtered_co_adj, modality_adj)
             if self.colmod_compat:
                 with torch.no_grad():
                     id_seq = self._graph_convolution(filtered_co_adj, id_seq)
@@ -337,20 +348,28 @@ class LLMESRClean(nn.Module):
 
         id_feats = self.id_backbone(id_seq, seq)
         llm_feats = self.llm_backbone(llm_seq, seq)
-        return id_feats, llm_feats
+        return pairwise_align_loss, id_feats, llm_feats
 
     def log2feats(self, seq, positions, return_views=False):
-        id_feats, llm_feats = self._encode_views(seq, positions)
+        pairwise_align_loss, id_feats, llm_feats = self._encode_views(seq, positions)
         if return_views:
+            if self.colmod_compat and self.enable_id:
+                return pairwise_align_loss, id_feats, llm_feats
             return id_feats, llm_feats
+        if self.colmod_compat and self.enable_id:
+            return pairwise_align_loss, id_feats, llm_feats
         return self._combine_views(id_feats, llm_feats)
 
     def _get_embedding(self, item_ids):
         return self._combine_views(*self._item_views(item_ids))
 
     def forward(self, seq, pos, neg, positions, **kwargs):
-        id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
-        log_feats = self._combine_views(id_feats, llm_feats)
+        if self.colmod_compat and self.enable_id:
+            _, id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+            log_feats = self._combine_views(id_feats, llm_feats)
+        else:
+            id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+            log_feats = self._combine_views(id_feats, llm_feats)
         pos_emb = self._get_embedding(pos)
         neg_emb = self._get_embedding(neg)
 
@@ -364,8 +383,12 @@ class LLMESRClean(nn.Module):
         if self.use_pair_loss:
             loss = loss + self.pair_loss_weight * self.pair_loss(id_feats[valid_mask], llm_feats[valid_mask])
         if self.use_align_loss and "sim_seq" in kwargs and "sim_positions" in kwargs:
-            align_weight = self._dynamic_align_weight(kwargs.get("user_id"), seq.device)
-            loss = loss + align_weight * self._user_align_loss(seq, positions, id_feats, llm_feats, kwargs)
+            if self.colmod_compat:
+                align_weight = self._dynamic_align_weight(kwargs.get("user_id"), seq.device)
+                loss = loss + align_weight * self._user_align_loss_colmod(seq, positions, kwargs)
+            else:
+                align_weight = self._dynamic_align_weight(kwargs.get("user_id"), seq.device)
+                loss = loss + align_weight * self._user_align_loss(seq, positions, id_feats, llm_feats, kwargs)
         if self.item_reg:
             loss = loss + self.beta * self._item_regularization(seq)
 
@@ -404,16 +427,54 @@ class LLMESRClean(nn.Module):
         llm_loss = self.align_loss(llm_feats[:, -1, :], sim_llm_repr)
         return self.collab_llm_ratio * id_loss + llm_loss
 
+    def _user_align_loss_colmod(self, seq, positions, kwargs):
+        if not self.enable_id:
+            log_feats = self.log2feats(seq, positions)[:, -1, :]
+            sim_seq = kwargs["sim_seq"].reshape(-1, seq.size(1))
+            sim_positions = kwargs["sim_positions"].reshape(-1, seq.size(1))
+            sim_num = kwargs["sim_seq"].size(1)
+
+            sim_log_feats = self.log2feats(sim_seq, sim_positions)[:, -1, :]
+            sim_log_feats = sim_log_feats.detach().reshape(seq.size(0), sim_num, -1).mean(dim=1)
+            return self.align_loss(log_feats, sim_log_feats)
+
+        _, collab_feats, llm_feats = self.log2feats(seq, positions)
+        collab_feats = collab_feats[:, -1, :].reshape(seq.size(0), -1)
+        llm_feats = llm_feats[:, -1, :].reshape(seq.size(0), -1)
+
+        sim_seq = kwargs["sim_seq"].reshape(-1, seq.size(1))
+        sim_positions = kwargs["sim_positions"].reshape(-1, seq.size(1))
+        sim_num = kwargs["sim_seq"].size(1)
+        _, _, sim_llm_feats = self.log2feats(sim_seq, sim_positions)
+        sim_llm_feats = sim_llm_feats[:, -1, :].detach().reshape(seq.size(0), sim_num, -1).mean(dim=1)
+
+        sim_collab_seq = kwargs["sim_collab_seq"].reshape(-1, seq.size(1))
+        sim_collab_positions = kwargs["sim_collab_positions"].reshape(-1, seq.size(1))
+        collab_num = kwargs["sim_collab_seq"].size(1)
+        _, sim_collab_feats, _ = self.log2feats(sim_collab_seq, sim_collab_positions)
+        sim_collab_feats = sim_collab_feats[:, -1, :].detach().reshape(seq.size(0), collab_num, -1).mean(dim=1)
+
+        id_loss = self.align_loss(collab_feats, sim_collab_feats)
+        llm_loss = self.align_loss(llm_feats, sim_llm_feats)
+        return self.collab_llm_ratio * id_loss + llm_loss
+
     def _item_regularization(self, seq):
         item_ids = torch.masked_select(seq, seq > 0)
         id_emb, llm_emb = self._item_views(item_ids)
         return self.reg_loss(llm_emb, id_emb)
 
     def predict(self, seq, item_indices, positions, **kwargs):
-        final_feat = self.log2feats(seq, positions)[:, -1, :]
+        if self.colmod_compat and self.enable_id:
+            _, id_feats, llm_feats = self.log2feats(seq, positions)
+            final_feat = self._combine_views(id_feats, llm_feats)[:, -1, :]
+        else:
+            final_feat = self.log2feats(seq, positions)[:, -1, :]
         item_emb = self._get_embedding(item_indices)
         return item_emb.matmul(final_feat.unsqueeze(-1)).squeeze(-1)
 
     def get_user_emb(self, seq, positions, **kwargs):
-        id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+        if self.colmod_compat and self.enable_id:
+            _, id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
+        else:
+            id_feats, llm_feats = self.log2feats(seq, positions, return_views=True)
         return self._combine_views(id_feats[:, -1, :], llm_feats[:, -1, :])
