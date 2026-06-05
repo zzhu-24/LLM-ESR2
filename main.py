@@ -248,7 +248,7 @@ parser.add_argument("--hgc_layers",
                     type=int,
                     help="the number of graph propagation layers in llmesr_clean")
 parser.add_argument("--modality_threshold",
-                    default=0.7,
+                    default=0.1,
                     type=float,
                     help="cosine threshold for the modality graph in llmesr_clean")
 parser.add_argument("--graph_filter",

@@ -270,7 +270,7 @@ class LLMESRClean(nn.Module):
 
     def _build_modality_graph(self, llm_seq):
         sim = torch.matmul(F.normalize(llm_seq, p=2, dim=-1), F.normalize(llm_seq, p=2, dim=-1).transpose(-1, -2))
-        sim = (sim > self.modality_threshold).float()
+        sim = sim * (sim > self.modality_threshold).float()
         return self._normalize_graph(sim)
 
     @staticmethod
