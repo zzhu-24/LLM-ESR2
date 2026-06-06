@@ -1,0 +1,83 @@
+2026-05-10 19:01:14,511-The parameters are as below:
+2026-05-10 19:01:14,512-model_name: llmesr_clean
+2026-05-10 19:01:14,512-dataset: beauty2014
+2026-05-10 19:01:14,512-inter_file: inter
+2026-05-10 19:01:14,512-demo: False
+2026-05-10 19:01:14,512-pretrain_dir: ./saved/beauty2014/sasrec_seq
+2026-05-10 19:01:14,512-output_dir: ./saved/beauty2014/llmesr_clean/clean_colmod_align_enable_id_seed42
+2026-05-10 19:01:14,512-check_path: clean_colmod_align_enable_id_seed42
+2026-05-10 19:01:14,512-do_test: False
+2026-05-10 19:01:14,512-do_emb: False
+2026-05-10 19:01:14,512-do_group: False
+2026-05-10 19:01:14,512-keepon: False
+2026-05-10 19:01:14,512-keepon_path: ./saved/beauty2014/llmesr_clean/normal
+2026-05-10 19:01:14,512-clip_path: 
+2026-05-10 19:01:14,512-ts_user: 10
+2026-05-10 19:01:14,512-ts_item: 20
+2026-05-10 19:01:14,512-hidden_size: 64
+2026-05-10 19:01:14,512-backbone: sasrec
+2026-05-10 19:01:14,512-fusion: concat
+2026-05-10 19:01:14,512-trm_num: 2
+2026-05-10 19:01:14,512-num_heads: 1
+2026-05-10 19:01:14,512-num_layers: 1
+2026-05-10 19:01:14,512-cl_scale: 0.1
+2026-05-10 19:01:14,512-mask_crop_ratio: 0.3
+2026-05-10 19:01:14,512-tau: 1
+2026-05-10 19:01:14,512-sse_ratio: 0.4
+2026-05-10 19:01:14,512-dropout_rate: 0.5
+2026-05-10 19:01:14,512-max_len: 200
+2026-05-10 19:01:14,512-mask_prob: 0.4
+2026-05-10 19:01:14,513-aug: False
+2026-05-10 19:01:14,513-aug_seq: False
+2026-05-10 19:01:14,513-aug_seq_len: 0
+2026-05-10 19:01:14,513-aug_file: inter
+2026-05-10 19:01:14,513-train_neg: 1
+2026-05-10 19:01:14,513-test_neg: 100
+2026-05-10 19:01:14,513-suffix_num: 5
+2026-05-10 19:01:14,513-prompt_num: 2
+2026-05-10 19:01:14,513-freeze: False
+2026-05-10 19:01:14,513-pg: length
+2026-05-10 19:01:14,513-use_adapter: False
+2026-05-10 19:01:14,513-use_cross_att: False
+2026-05-10 19:01:14,513-use_cross_attn: False
+2026-05-10 19:01:14,513-adapter_type: cross_att
+2026-05-10 19:01:14,513-alpha: 0.1
+2026-05-10 19:01:14,513-use_align_loss: True
+2026-05-10 19:01:14,513-user_sim_func: kd
+2026-05-10 19:01:14,513-item_reg: False
+2026-05-10 19:01:14,513-beta: 0.1
+2026-05-10 19:01:14,513-pair_loss_weight: 0.1
+2026-05-10 19:01:14,513-use_pair_loss: False
+2026-05-10 19:01:14,513-collab_llm_ratio: 1.0
+2026-05-10 19:01:14,513-use_graph: True
+2026-05-10 19:01:14,513-use_co_graph: True
+2026-05-10 19:01:14,513-use_modality_graph: True
+2026-05-10 19:01:14,513-graph_mix: intersection
+2026-05-10 19:01:14,513-hgc_layers: 2
+2026-05-10 19:01:14,513-modality_threshold: 0.7
+2026-05-10 19:01:14,513-sim_user_num: 10
+2026-05-10 19:01:14,513-split_backbone: False
+2026-05-10 19:01:14,514-co_view: False
+2026-05-10 19:01:14,514-se_view: False
+2026-05-10 19:01:14,514-enable_id: True
+2026-05-10 19:01:14,514-train_batch_size: 256
+2026-05-10 19:01:14,514-lr: 0.001
+2026-05-10 19:01:14,514-l2: 0
+2026-05-10 19:01:14,514-num_train_epochs: 200.0
+2026-05-10 19:01:14,514-lr_dc_step: 1000
+2026-05-10 19:01:14,514-lr_dc: 0
+2026-05-10 19:01:14,514-patience: 20
+2026-05-10 19:01:14,514-watch_metric: NDCG@10
+2026-05-10 19:01:14,514-seed: 42
+2026-05-10 19:01:14,514-no_cuda: False
+2026-05-10 19:01:14,514-gpu_id: 0
+2026-05-10 19:01:14,514-num_workers: 0
+2026-05-10 19:01:14,514-log: True
+2026-05-10 19:01:19,108-Loading dataset ... 
+2026-05-10 19:01:19,951-Dataset is loaded: consume 0.842 s
+2026-05-10 19:01:19,951-Loading Model: llmesr_clean
+2026-05-10 19:01:24,330-# of model parameters: 48054144
+2026-05-10 19:01:34,589-
+----------------------------------------------------------------
+2026-05-10 19:01:34,590-********** Running training **********
+2026-05-10 19:01:34,590-  Batch size = 256

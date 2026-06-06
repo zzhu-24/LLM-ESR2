@@ -1,0 +1,68 @@
+2025-11-05 19:35:18,382-The parameters are as below:
+2025-11-05 19:35:18,382-model_name: llmesr_colmod
+2025-11-05 19:35:18,382-dataset: musical
+2025-11-05 19:35:18,382-inter_file: inter
+2025-11-05 19:35:18,382-demo: False
+2025-11-05 19:35:18,382-pretrain_dir: ./saved/musical/sasrec_seq
+2025-11-05 19:35:18,382-output_dir: ./saved/musical/llmesr_colmod/analyze
+2025-11-05 19:35:18,382-check_path: analyze
+2025-11-05 19:35:18,383-do_test: False
+2025-11-05 19:35:18,383-do_emb: False
+2025-11-05 19:35:18,383-do_group: False
+2025-11-05 19:35:18,383-keepon: True
+2025-11-05 19:35:18,383-keepon_path: /home/zhuzhehua/2025/LLM-ESR2/saved/appliances/llmesr_colmod
+2025-11-05 19:35:18,383-clip_path: 
+2025-11-05 19:35:18,383-ts_user: 8
+2025-11-05 19:35:18,383-ts_item: 9
+2025-11-05 19:35:18,383-hidden_size: 64
+2025-11-05 19:35:18,383-trm_num: 2
+2025-11-05 19:35:18,383-num_heads: 1
+2025-11-05 19:35:18,383-num_layers: 1
+2025-11-05 19:35:18,383-cl_scale: 0.1
+2025-11-05 19:35:18,383-mask_crop_ratio: 0.3
+2025-11-05 19:35:18,383-tau: 1
+2025-11-05 19:35:18,383-sse_ratio: 0.4
+2025-11-05 19:35:18,383-dropout_rate: 0.5
+2025-11-05 19:35:18,383-max_len: 20
+2025-11-05 19:35:18,383-mask_prob: 0.4
+2025-11-05 19:35:18,383-aug: False
+2025-11-05 19:35:18,383-aug_seq: False
+2025-11-05 19:35:18,383-aug_seq_len: 0
+2025-11-05 19:35:18,383-aug_file: inter
+2025-11-05 19:35:18,383-train_neg: 1
+2025-11-05 19:35:18,383-test_neg: 100
+2025-11-05 19:35:18,383-suffix_num: 5
+2025-11-05 19:35:18,383-prompt_num: 2
+2025-11-05 19:35:18,383-freeze: True
+2025-11-05 19:35:18,383-pg: length
+2025-11-05 19:35:18,383-use_cross_att: False
+2025-11-05 19:35:18,384-alpha: 0.1
+2025-11-05 19:35:18,384-user_sim_func: cl
+2025-11-05 19:35:18,384-item_reg: False
+2025-11-05 19:35:18,384-beta: 0.1
+2025-11-05 19:35:18,384-pair_loss_weight: 0.01
+2025-11-05 19:35:18,384-collab_llm_ratio: 1.0
+2025-11-05 19:35:18,384-sim_user_num: 10
+2025-11-05 19:35:18,384-split_backbone: False
+2025-11-05 19:35:18,384-co_view: False
+2025-11-05 19:35:18,384-se_view: False
+2025-11-05 19:35:18,384-enable_id: True
+2025-11-05 19:35:18,384-train_batch_size: 128
+2025-11-05 19:35:18,384-lr: 0.001
+2025-11-05 19:35:18,384-l2: 0
+2025-11-05 19:35:18,384-num_train_epochs: 1.0
+2025-11-05 19:35:18,384-lr_dc_step: 1000
+2025-11-05 19:35:18,384-lr_dc: 0
+2025-11-05 19:35:18,384-patience: 20
+2025-11-05 19:35:18,384-watch_metric: NDCG@10
+2025-11-05 19:35:18,384-seed: 42
+2025-11-05 19:35:18,384-no_cuda: False
+2025-11-05 19:35:18,384-gpu_id: 0
+2025-11-05 19:35:18,384-num_workers: 2
+2025-11-05 19:35:18,384-log: True
+2025-11-05 19:35:20,753-Loading dataset ... 
+2025-11-05 19:35:21,327-Dataset is loaded: consume 0.573 s
+2025-11-05 19:35:21,327-Loading Model: llmesr_colmod
+2025-11-05 19:35:24,150-# of model parameters: 27898560
+2025-11-05 19:35:30,473-Loading the trained model for keep on training ... 
+2025-11-05 19:35:30,557-Total loaded parameters: 38, update: 38

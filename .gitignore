@@ -1,6 +1,5 @@
 __pycache__/
 saved/
-*.txt
 *.pkl
 *.bin
 *.log
