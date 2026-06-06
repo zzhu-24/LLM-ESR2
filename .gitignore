@@ -4,7 +4,6 @@ saved/
 *.txt
 *.pkl
 *.bin
-*.log
 !requirements.txt
 slurm_results/
 outputs/
