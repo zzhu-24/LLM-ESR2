@@ -5,7 +5,7 @@ seed_list=(42 43 44)
 for seed in "${seed_list[@]}"
 do
   python main.py \
-    --model_name llmesr_clean \
+    --model_name llmesr_colmod \
     --dataset ${dataset} \
     --fusion concat \
     --colmod_compat \
@@ -20,7 +20,7 @@ do
     --dropout_rate 0.5 \
     --max_len 20 \
     --freeze \
-    --train_batch_size 128 \
+    --train_batch_size 512 \
     --test_neg 100 \
     --lr 0.001 \
     --num_train_epochs 40 \
