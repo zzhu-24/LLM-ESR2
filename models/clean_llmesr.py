@@ -312,16 +312,19 @@ class LLMESRClean(nn.Module):
             hidden = torch.bmm(adj, hidden) + hidden
         return hidden
 
-    def _add_position(self, item_ids, seq_emb, positions):
+    def _add_position(self, item_ids, seq_emb, positions, mask_padding=True):
         seq_emb = seq_emb * (seq_emb.size(-1) ** 0.5)
         seq_emb = seq_emb + self.pos_emb(positions.long())
         seq_emb = self.emb_dropout(seq_emb)
+        if not mask_padding:
+            return seq_emb
         return seq_emb.masked_fill(item_ids.eq(0).unsqueeze(-1), 0.0)
 
     def _encode_views(self, seq, positions):
         id_seq, llm_seq = self._item_views(seq)
-        id_seq = self._add_position(seq, id_seq, positions)
-        llm_seq = self._add_position(seq, llm_seq, positions)
+        mask_padding = not self.colmod_compat
+        id_seq = self._add_position(seq, id_seq, positions, mask_padding=mask_padding)
+        llm_seq = self._add_position(seq, llm_seq, positions, mask_padding=mask_padding)
         pairwise_align_loss = 0.0
 
         if self.use_graph:
