@@ -9,41 +9,41 @@ case "${dataset}" in
   fashion)
     ts_user=3
     ts_item=2
-    max_len=50
+    max_len=10
     batch_size=512
-    epochs=40
+    epochs=20
     workers=8
     ;;
   beauty2014)
     ts_user=7
     ts_item=6
-    max_len=20
+    max_len=18
     batch_size=512
-    epochs=40
+    epochs=25
     workers=2
     ;;
   musical)
     ts_user=8
     ts_item=9
-    max_len=20
+    max_len=18
     batch_size=128
-    epochs=100
+    epochs=25
     workers=2
     ;;
   appliances)
     ts_user=5
     ts_item=3
-    max_len=50
+    max_len=11
     batch_size=512
-    epochs=500
+    epochs=20
     workers=2
     ;;
   games)
     ts_user=12
     ts_item=13
-    max_len=20
+    max_len=28
     batch_size=512
-    epochs=10
+    epochs=40
     workers=8
     ;;
   *)

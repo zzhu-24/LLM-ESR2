@@ -67,7 +67,7 @@ def main():
     parser = argparse.ArgumentParser(description="Report user sequence length stats and draw a histogram.")
     parser.add_argument("--dataset", default="beauty2014", help="dataset folder under data/")
     parser.add_argument("--inter_file", default=None, help="path to inter.txt; overrides --dataset")
-    parser.add_argument("--bin_size", default=5, type=int, help="histogram bin size")
+    parser.add_argument("--bin_size", default=1, type=int, help="histogram bin size")
     parser.add_argument("--output", default=None, help="output SVG path")
     args = parser.parse_args()
 
@@ -86,11 +86,22 @@ def main():
     write_svg_histogram(bins, output, f"{args.dataset} user history length distribution")
 
     avg_len = sum(lengths) / len(lengths)
+    sorted_lengths = sorted(lengths)
+    n = len(sorted_lengths)
+    p90_idx = int(n * 0.9)
+    p95_idx = int(n * 0.95)
+    p99_idx = int(n * 0.99)
+    p90 = sorted_lengths[p90_idx]
+    p95 = sorted_lengths[p95_idx]
+    p99 = sorted_lengths[p99_idx]
     print(f"dataset: {args.dataset}")
     print(f"users: {len(lengths)}")
     print(f"min_len: {min(lengths)}")
     print(f"avg_len: {avg_len:.4f}")
     print(f"max_len: {max(lengths)}")
+    print(f"p90_len: {p90}")
+    print(f"p95_len: {p95}")
+    print(f"p99_len: {p99}")
     print(f"histogram: {output}")
 
 
