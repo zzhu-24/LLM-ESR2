@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=efficient_compress
+#SBATCH --job-name=run
 #SBATCH --partition=RTX3090
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
