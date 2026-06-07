@@ -56,6 +56,8 @@ class Trainer(object):
             self.model = LLMESR_Bert4Rec(self.user_num, self.item_num, self.device, self.args)
         elif self.args.model_name == "llmesr_colmod":
             self.model = LLMESR_ColMod(self.user_num, self.item_num, self.device, self.args)
+        elif self.args.model_name == "llmesr_intent_colmod":
+            self.model = LLMESR_IntentColMod(self.user_num, self.item_num, self.device, self.args)
         else:
             raise ValueError
         
@@ -195,5 +197,4 @@ class Trainer(object):
         freeze_num = total_num - trainable_num
 
         return freeze_num, trainable_num
-
 

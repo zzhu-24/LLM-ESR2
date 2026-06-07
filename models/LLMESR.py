@@ -276,3 +276,84 @@ class LLMESR_ColMod(DualColMod):
             loss += self.beta * reg_loss
 
         return loss
+
+
+class LLMESR_IntentColMod(DualIntentColMod):
+
+    def __init__(self, user_num, item_num, device, args):
+
+        super().__init__(user_num, item_num, device, args)
+        self.alpha = args.alpha
+        self.user_sim_func = args.user_sim_func
+        self.item_reg = args.item_reg
+        self.args = args
+
+        if self.user_sim_func == "cl":
+            self.align = Contrastive_Loss2()
+        elif self.user_sim_func == "kd":
+            self.align = nn.MSELoss()
+        else:
+            raise ValueError
+
+        self.projector1 = nn.Linear(2*args.hidden_size, 2*args.hidden_size)
+        self.projector2 = nn.Linear(2*args.hidden_size, 2*args.hidden_size)
+
+        if self.item_reg:
+            self.beta = args.beta
+            self.reg = Contrastive_Loss2()
+
+        self._init_weights()
+
+    def forward(self,
+                seq,
+                pos,
+                neg,
+                positions,
+                **kwargs):
+
+        loss = super().forward(seq, pos, neg, positions, **kwargs)
+
+        if not self.enable_id:
+            log_feats = self.log2feats(seq, positions)[:, -1, :]
+            sim_seq = kwargs["sim_seq"].view(-1, seq.shape[1])
+            sim_positions = kwargs["sim_positions"].view(-1, seq.shape[1])
+            sim_num = kwargs["sim_seq"].shape[1]
+            sim_log_feats = self.log2feats(sim_seq, sim_positions)[:, -1, :]
+            sim_log_feats = sim_log_feats.detach().view(seq.shape[0], sim_num, -1)
+            sim_log_feats = torch.mean(sim_log_feats, dim=1)
+
+            align_loss = self.align(log_feats, sim_log_feats)
+            loss += self.alpha * align_loss
+
+        else:
+            pairwise_align_loss, collab_feats, llm_feats = self.log2feats(seq, positions)
+            collab_feats = collab_feats[:, -1, :].clone().view(seq.shape[0], -1)
+            llm_feats = llm_feats[:, -1, :].clone().view(seq.shape[0], -1)
+            loss += self.args.pair_loss_weight * pairwise_align_loss
+
+            sim_seq = kwargs["sim_seq"].view(-1, seq.shape[1])
+            sim_positions = kwargs["sim_positions"].view(-1, seq.shape[1])
+            sim_num = kwargs["sim_seq"].shape[1]
+            _, _, sim_llm_feats = self.log2feats(sim_seq, sim_positions)
+            sim_llm_feats = sim_llm_feats[:, -1, :].detach().view(seq.shape[0], sim_num, -1)
+            sim_llm_feats = torch.mean(sim_llm_feats, dim=1)
+
+            sim_seq = kwargs["sim_collab_seq"].view(-1, seq.shape[1])
+            sim_positions = kwargs["sim_collab_positions"].view(-1, seq.shape[1])
+            sim_num = kwargs["sim_collab_seq"].shape[1]
+            _, sim_collab_feats, _ = self.log2feats(sim_seq, sim_positions)
+            sim_collab_feats = sim_collab_feats[:, -1, :].detach().view(seq.shape[0], sim_num, -1)
+            sim_collab_feats = torch.mean(sim_collab_feats, dim=1)
+
+            align_loss = self.args.collab_llm_ratio * self.align(collab_feats, sim_collab_feats) \
+                         + self.align(llm_feats, sim_llm_feats)
+            loss += self.alpha * align_loss
+
+        if self.item_reg:
+            unfold_item_id = torch.masked_select(seq, seq > 0)
+            llm_item_emb = self.first_adapter(self.llm_item_emb(unfold_item_id))
+            id_item_emb = self.id_item_emb(unfold_item_id)
+            reg_loss = self.reg(llm_item_emb, id_item_emb)
+            loss += self.beta * reg_loss
+
+        return loss

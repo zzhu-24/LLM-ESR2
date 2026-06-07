@@ -68,6 +68,30 @@ def manhattan_similarity(A, B, method='global'):
     return max(0, min(1, similarity))
 
 
+class IntentGate(nn.Module):
+    def __init__(self, hidden_size, dropout_rate):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(2 * hidden_size + 1, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(hidden_size, 2)
+        )
+
+    def _masked_mean(self, embeddings, log_seqs):
+        mask = (log_seqs > 0).float().unsqueeze(-1)
+        denom = mask.sum(dim=1).clamp_min(1.0)
+        return (embeddings * mask).sum(dim=1) / denom
+
+    def forward(self, collab_embeddings, semantic_embeddings, log_seqs):
+        collab_pool = self._masked_mean(collab_embeddings, log_seqs)
+        semantic_pool = self._masked_mean(semantic_embeddings, log_seqs)
+        gap = torch.norm(collab_pool - semantic_pool, p=2, dim=-1, keepdim=True)
+        gate_input = torch.cat([collab_pool, semantic_pool, gap], dim=-1)
+        weights = torch.softmax(self.net(gate_input), dim=-1)
+        return weights[:, 0:1], weights[:, 1:2], gap
+
+
 class DualLLMGRU4Rec(GRU4Rec):
 
     def __init__(self, user_num, item_num, device, args):
@@ -530,6 +554,78 @@ class DualColMod(SASRec_seq):
 
         item_seq_emb = torch.cat([id_seq_emb, llm_seq_emb], dim=-1)
         return item_seq_emb
+
+
+class DualIntentColMod(DualColMod):
+    def __init__(self, user_num, item_num, device, args):
+        super().__init__(user_num, item_num, device, args)
+        self.semantic_filter_weight = args.semantic_filter_weight
+        self.semantic_graph_threshold = args.semantic_graph_threshold
+        self.intent_gate = IntentGate(args.hidden_size, args.intent_gate_dropout)
+
+    def _normalize_adj(self, adjacency):
+        row_sum = adjacency.sum(dim=-1, keepdim=True)
+        return adjacency / (row_sum + 1e-8)
+
+    def build_modality_graph(self, llm_embeddings):
+        norm_emb = F.normalize(llm_embeddings, p=2, dim=-1)
+        sim = torch.matmul(norm_emb, norm_emb.transpose(-1, -2))
+        sim = sim * (sim > self.semantic_graph_threshold).float()
+        return self._normalize_adj(sim)
+
+    def build_disentangled_collab_graph(self, co_adj, semantic_adj):
+        pure_co_adj = torch.relu(co_adj - self.semantic_filter_weight * semantic_adj)
+        return self._normalize_adj(pure_co_adj)
+
+    def _masked_alignment_loss(self, collab_embeddings, semantic_embeddings, log_seqs, gap):
+        mask = (log_seqs > 0).float()
+        collab_norm = F.normalize(collab_embeddings, p=2, dim=-1)
+        semantic_norm = F.normalize(semantic_embeddings, p=2, dim=-1)
+        per_position_loss = F.mse_loss(collab_norm, semantic_norm, reduction='none').mean(dim=-1)
+        loss = (per_position_loss * mask).sum() / mask.sum().clamp_min(1.0)
+        gap_weight = torch.exp(-gap.detach()).mean()
+        return gap_weight * loss
+
+    def log2feats(self, log_seqs, positions):
+        id_seqs = self.id_item_emb(log_seqs)
+        id_seqs *= self.id_item_emb.embedding_dim ** 0.5
+        id_seqs += self.pos_emb(positions.long())
+        id_seqs = self.emb_dropout(id_seqs)
+
+        llm_seqs = self.llm_item_emb(log_seqs)
+        llm_seqs = self.first_adapter(llm_seqs)
+        llm_seqs *= self.id_item_emb.embedding_dim ** 0.5
+        llm_seqs += self.pos_emb(positions.long())
+        llm_seqs = self.emb_dropout(llm_seqs)
+
+        co_adj = self.build_co_occurrence_graph(log_seqs)
+        semantic_adj = self.build_modality_graph(llm_seqs)
+        intent_adj = self.build_disentangled_collab_graph(co_adj, semantic_adj)
+
+        id_seqs = self.hypergraph_convolution(intent_adj, id_seqs)
+        llm_seqs = self.hypergraph_convolution(semantic_adj, llm_seqs)
+
+        collab_weight, semantic_weight, gap = self.intent_gate(id_seqs, llm_seqs, log_seqs)
+        pairwise_align_loss = self._masked_alignment_loss(id_seqs, llm_seqs, log_seqs, gap)
+
+        if self.use_adapter:
+            adapter_id_seqs = self.adapter_id(llm_seqs, id_seqs, log_seqs)
+            adapter_llm_seqs = self.adapter_llm(id_seqs, llm_seqs, log_seqs)
+        else:
+            adapter_id_seqs = id_seqs
+            adapter_llm_seqs = llm_seqs
+
+        id_log_feats = self.backbone(adapter_id_seqs, log_seqs)
+        llm_log_feats = self.backbone(adapter_llm_seqs, log_seqs)
+
+        id_log_feats = id_log_feats * collab_weight.unsqueeze(1)
+        llm_log_feats = llm_log_feats * semantic_weight.unsqueeze(1)
+
+        if self.enable_id:
+            return pairwise_align_loss, id_log_feats, llm_log_feats
+
+        log_feats = torch.cat([id_log_feats, llm_log_feats], dim=-1)
+        return log_feats
 
 
 # class DualColMod(SASRec_seq):

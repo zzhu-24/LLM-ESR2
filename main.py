@@ -17,7 +17,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_name", 
                     default='llmesr_sasrec',
                     choices=[
-                    "llmesr_sasrec", "llmesr_bert4rec", "llmesr_gru4rec", "llmesr_colmod"
+                    "llmesr_sasrec", "llmesr_bert4rec", "llmesr_gru4rec",
+                    "llmesr_colmod", "llmesr_intent_colmod"
                     ],
                     type=str, 
                     required=False,
@@ -170,11 +171,31 @@ parser.add_argument("--use_adapter",
                     default=False,
                     action="store_true",
                     help="whether add an adapter")
+parser.add_argument("--use_cross_att",
+                    default=False,
+                    action="store_true",
+                    help="backward-compatible alias for --use_adapter")
 parser.add_argument("--adapter_type",
                     default="cross_att",
                     choices=["cross_att", "mlp"],
                     type=str,
                     help="type of adapter: 'cross_att' for cross attention or 'mlp' for MLP adapter")
+parser.add_argument("--hgc_layers",
+                    default=2,
+                    type=int,
+                    help="the number of graph propagation layers for ColMod variants")
+parser.add_argument("--semantic_filter_weight",
+                    default=0.5,
+                    type=float,
+                    help="weight used to remove semantic similarity from co-occurrence graph")
+parser.add_argument("--semantic_graph_threshold",
+                    default=0.1,
+                    type=float,
+                    help="cosine threshold for semantic graph edges")
+parser.add_argument("--intent_gate_dropout",
+                    default=0.1,
+                    type=float,
+                    help="dropout rate inside the intent gate")
 parser.add_argument("--alpha",
                     default=0.1,
                     type=float,
@@ -277,6 +298,8 @@ parser.add_argument("--log",
 torch.autograd.set_detect_anomaly(True)
 
 args = parser.parse_args()
+if args.use_cross_att:
+    args.use_adapter = True
 set_seed(args.seed) # fix the random seed
 args.output_dir = os.path.join(args.output_dir, args.dataset)
 args.pretrain_dir = os.path.join(args.output_dir, args.pretrain_dir)
@@ -304,7 +327,7 @@ def main():
         generator = BertGeneratorAllUser(args, logger, device)
     elif args.model_name in ["llmesr_sasrec"]:
         generator = Seq2SeqGeneratorAllUser(args, logger, device)
-    elif args.model_name in ["llmesr_colmod"]:
+    elif args.model_name in ["llmesr_colmod", "llmesr_intent_colmod"]:
         generator = Seq2SeqGeneratorAllUser(args, logger, device)
     else:
         raise ValueError
