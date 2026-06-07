@@ -1,18 +1,37 @@
-#!/bin/bash
- 
-SBATCH --job-name=run
-SBATCH --partition=RTX3090             # 用sinfo命令可以看到所有队列，默认为debug队列
-SBATCH --nodes=1                       # 申请的节点数量，单机训练无需调整
-SBATCH --ntasks-per-node=1             # 若多卡或多进程，请调整此参数
-SBATCH --cpus-per-task=1               # 每个进程的CPU数量
-SBATCH --mem=50GB                      # 申请的内存大小
-SBATCH --gres=gpu:1                    # 若使用2块卡，则gres=gpu:2
-SBATCH --mail-type=end                 # 设置邮件通知类型，可选all, end, fail, begin等
-SBATCH --mail-user=your@1993604693@qq.com   # 设置通知邮箱
-SBATCH --output=slurm_results/musical/%j.out                 # 设置标准输出的文件路径
-SBATCH --error=slurm_results/musical/%j.err                  # 设置标准错误的文件路径
+#!/usr/bin/env bash
+#SBATCH --job-name=efficient_compress
+#SBATCH --partition=RTX3090
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=50GB
+#SBATCH --gres=gpu:1
+#SBATCH --mail-type=end
+#SBATCH --mail-user=your@1993604693@qq.com
+#SBATCH --output=slurm-%j.out
+#SBATCH --error=slurm-%j.err
+
+set -euo pipefail
+
+DATASET="${DATASET:-musical}"
+SEEDS="${SEEDS:-42}"
+GPU_ID="${GPU_ID:-0}"
+CONDA_ENV="${CONDA_ENV:-llmesr}"
+REPO_DIR="${REPO_DIR:-${SLURM_SUBMIT_DIR:-/home/zhuzhehua/2025/LLM-ESR2}}"
 
 source ~/anaconda3/etc/profile.d/conda.sh
-conda activate llmesr
-cd /home/zhuzhehua/2025/LLM-ESR2
-bash experiments/musical.bash
+conda activate "${CONDA_ENV}"
+cd "${REPO_DIR}"
+
+mkdir -p "slurm_results/${DATASET}"
+
+echo "Running efficient compression experiment"
+echo "repo: ${REPO_DIR}"
+echo "dataset: ${DATASET}"
+echo "seeds: ${SEEDS}"
+echo "gpu_id: ${GPU_ID}"
+
+export SEEDS
+export GPU_ID
+
+bash experiments/efficient_compress.bash "${DATASET}" 2>&1 | tee "slurm_results/${DATASET}/efficient_compress_${SLURM_JOB_ID:-manual}.log"
