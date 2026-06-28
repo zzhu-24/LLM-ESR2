@@ -35,7 +35,7 @@ case "${dataset}" in
     ts_item=3
     max_len=11
     batch_size=512
-    epochs=20
+    epochs=60
     workers=2
     ;;
   games)
