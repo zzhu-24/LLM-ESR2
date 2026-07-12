@@ -9,6 +9,13 @@ from utils.utils import metric_report, metric_len_report, record_csv, metric_pop
 from utils.utils import metric_len_5group, metric_pop_5group
 import random
 import pickle
+from pathlib import Path
+
+from utils.frequency_group import (
+    build_frequency_group_report,
+    write_frequency_group_csv,
+    write_frequency_group_svg,
+)
 
 class SeqTrainer(Trainer):
 
@@ -225,6 +232,97 @@ class SeqTrainer(Trainer):
         
         
         return res_dict
+
+
+    def frequency_group_test(self):
+
+        print('')
+        self.logger.info("\n----------------------------------------------------------------")
+        self.logger.info("********** Running frequency group test **********")
+        checkpoint_path = os.path.join(self.args.output_dir, 'pytorch_model.bin')
+        if not os.path.exists(checkpoint_path):
+            raise FileNotFoundError(f"Missing checkpoint: {checkpoint_path}")
+
+        model_state_dict = torch.load(checkpoint_path, map_location=self.device)
+        state_dict = model_state_dict['state_dict'] if isinstance(model_state_dict, dict) and 'state_dict' in model_state_dict else model_state_dict
+        self.model.load_state_dict(state_dict)
+        self.model.to(self.device)
+        self.model.eval()
+
+        pred_rank_list = []
+        seq_len_list = []
+        target_item_list = []
+
+        for batch in tqdm(self.test_loader, desc='Testing'):
+
+            batch = tuple(t.to(self.device) for t in batch)
+            inputs = self._prepare_eval_inputs(batch)
+            seq_len_list.append(torch.sum(inputs["seq"] > 0, dim=1).detach().cpu().numpy())
+            target_item_list.append(inputs["pos"].detach().cpu().numpy())
+
+            with torch.no_grad():
+
+                inputs["item_indices"] = torch.cat([inputs["pos"].unsqueeze(1), inputs["neg"]], dim=1)
+                pred_logits = -self.model.predict(**inputs)
+                per_pred_rank = torch.argsort(torch.argsort(pred_logits))[:, 0]
+                pred_rank_list.append(per_pred_rank.detach().cpu().numpy())
+
+        pred_rank = np.concatenate(pred_rank_list)
+        seq_len = np.concatenate(seq_len_list).astype(np.int64)
+        target_items = np.concatenate(target_item_list).astype(np.int64)
+        group_by = getattr(self.args, "freq_group_by", "user")
+
+        if group_by == "user":
+            frequencies = seq_len
+            x_label = "User interaction frequency before the test item"
+            count_label = "Test user count"
+        elif group_by == "item":
+            frequencies = self.item_pop[target_items].astype(np.int64)
+            x_label = "Target item interaction frequency"
+            count_label = "Test case count"
+        else:
+            raise ValueError(f"Unsupported frequency group: {group_by}")
+
+        topk = getattr(self.args, "freq_topk", 10)
+        rows = build_frequency_group_report(
+            pred_rank,
+            frequencies,
+            topk=topk,
+            bin_size=getattr(self.args, "freq_bin_size", 1),
+            thresholds=getattr(self.args, "freq_thresholds", ""),
+        )
+
+        output_dir = Path(getattr(self.args, "freq_output_dir", "outputs/sasrec_frequency_group"))
+        check_name = _safe_path_component(getattr(self.args, "check_path", ""))
+        suffix = f"_{check_name}" if check_name else ""
+        output_stem = f"{self.args.dataset}_{self.args.model_name}_{group_by}_frequency{suffix}"
+        csv_path = output_dir / f"{output_stem}.csv"
+        svg_path = output_dir / f"{output_stem}.svg"
+        title = f"{self.args.dataset} SASRec grouped by {group_by} interaction frequency"
+
+        write_frequency_group_csv(rows, csv_path, topk=topk)
+        write_frequency_group_svg(rows, svg_path, title, x_label, count_label, topk=topk)
+
+        self.logger.info("Frequency Group Performance:")
+        self.logger.info("\t group_by: %s", group_by)
+        self.logger.info("\t groups: %d", len(rows))
+        self.logger.info("\t csv: %s", csv_path)
+        self.logger.info("\t figure: %s", svg_path)
+
+        return rows
+
+
+def _safe_path_component(value):
+    value = str(value).strip().strip("/")
+    if not value:
+        return ""
+    safe = []
+    for char in value:
+        if char.isalnum() or char in ("-", "_", "."):
+            safe.append(char)
+        else:
+            safe.append("_")
+    return "".join(safe)
     
 
 

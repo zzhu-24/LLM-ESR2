@@ -56,6 +56,10 @@ parser.add_argument("--do_group",
                     default=False,
                     action="store_true",
                     help="conduct the group test")
+parser.add_argument("--do_freq_group",
+                    default=False,
+                    action="store_true",
+                    help="evaluate SASRec by interaction frequency groups and save a CSV plus SVG plot")
 parser.add_argument("--keepon",
                     default=False,
                     action="store_true",
@@ -76,6 +80,26 @@ parser.add_argument("--ts_item",
                     type=int,
                     default=20,
                     help="the threshold to split the long-tail and popular items")
+parser.add_argument("--freq_group_by",
+                    default="user",
+                    choices=["user", "item"],
+                    help="group frequency experiment by user history length or target item popularity")
+parser.add_argument("--freq_bin_size",
+                    default=1,
+                    type=int,
+                    help="fixed-width interaction frequency bin size for --do_freq_group")
+parser.add_argument("--freq_thresholds",
+                    default="",
+                    type=str,
+                    help="optional comma-separated frequency thresholds, e.g. '5,10,20'; overrides --freq_bin_size")
+parser.add_argument("--freq_topk",
+                    default=10,
+                    type=int,
+                    help="top-k used for frequency group HR/NDCG")
+parser.add_argument("--freq_output_dir",
+                    default="./outputs/sasrec_frequency_group",
+                    type=str,
+                    help="output directory for frequency group CSV and SVG files")
 
 # Model parameters
 parser.add_argument("--hidden_size",
@@ -217,7 +241,7 @@ class BaselineTrainer(SeqTrainer):
         self.logger.info('Loading Model: ' + args.model_name)
         self._create_model()
         from utils.utils import get_n_params
-        logger.info('# of model parameters: ' + str(get_n_params(self.model)))
+        self.logger.info('# of model parameters: ' + str(get_n_params(self.model)))
 
         self._set_optimizer()
         self._set_scheduler()
@@ -339,6 +363,10 @@ def main():
         trainer.save_user_emb()
     elif args.do_group:
         trainer.test_group()
+    elif args.do_freq_group:
+        if args.model_name != "sasrec":
+            raise ValueError("--do_freq_group is intended for SASRec. Please set --model_name sasrec.")
+        trainer.frequency_group_test()
     else:
         trainer.train()
 

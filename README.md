@@ -44,6 +44,14 @@ bash experiments/beauty.bash
 
 2. The log and results will be saved in the folder `log/`. The checkpoint will be saved in the folder `saved/`.
 
+3. To evaluate the long-tail issue with SASRec, run the frequency-group experiment after SASRec checkpoints are trained:
+
+```
+bash experiments/sasrec_frequency_group.bash
+```
+
+The script writes per-group CSV files and histogram-plus-line SVG figures to `outputs/sasrec_frequency_group/`.
+
 ## Citation
 
 If the code and the paper are useful for you, it is appreciable to cite our paper:
