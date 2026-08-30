@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="86" y="36" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#111827">fashion SASRec grouped by user interaction frequency</text>
+<text x="86" y="60" font-family="Arial, sans-serif" font-size="13" fill="#4b5563">Bars: Test user count. Lines: SASRec HR@10 and NDCG@10.</text>
+<line x1="86" y1="532" x2="1028" y2="532" stroke="#374151" stroke-width="1"/>
+<line x1="86" y1="78" x2="86" y2="532" stroke="#374151" stroke-width="1"/>
+<line x1="1028" y1="78" x2="1028" y2="532" stroke="#374151" stroke-width="1"/>
+<line x1="86" y1="532.0" x2="1028" y2="532.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="536.0" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0</text>
+<text x="1038" y="536.0" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0.00</text>
+<line x1="86" y1="441.2" x2="1028" y2="441.2" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="445.2" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">1.9K</text>
+<text x="1038" y="445.2" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0.20</text>
+<line x1="86" y1="350.4" x2="1028" y2="350.4" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="354.4" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">3.8K</text>
+<text x="1038" y="354.4" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0.40</text>
+<line x1="86" y1="259.6" x2="1028" y2="259.6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="263.6" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">5.7K</text>
+<text x="1038" y="263.6" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0.60</text>
+<line x1="86" y1="168.8" x2="1028" y2="168.8" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="172.8" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">7.7K</text>
+<text x="1038" y="172.8" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">0.80</text>
+<line x1="86" y1="78.0" x2="1028" y2="78.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="76" y="82.0" text-anchor="end" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">9.6K</text>
+<text x="1038" y="82.0" font-family="Arial, sans-serif" font-size="12" fill="#4b5563">1.00</text>
+<rect x="92.7" y="78.0" width="25.9" height="454.0" fill="#4f83cc" opacity="0.82"/>
+<text x="105.6" y="552" transform="rotate(-38 105.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">2</text>
+<rect x="131.9" y="343.1" width="25.9" height="188.9" fill="#4f83cc" opacity="0.82"/>
+<rect x="171.2" y="479.8" width="25.9" height="52.2" fill="#4f83cc" opacity="0.82"/>
+<text x="184.1" y="552" transform="rotate(-38 184.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">4</text>
+<rect x="210.4" y="510.5" width="25.9" height="21.5" fill="#4f83cc" opacity="0.82"/>
+<rect x="249.7" y="521.4" width="25.9" height="10.6" fill="#4f83cc" opacity="0.82"/>
+<text x="262.6" y="552" transform="rotate(-38 262.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">6</text>
+<rect x="288.9" y="511.6" width="25.9" height="20.4" fill="#4f83cc" opacity="0.82"/>
+<rect x="328.2" y="527.3" width="25.9" height="4.7" fill="#4f83cc" opacity="0.82"/>
+<text x="341.1" y="552" transform="rotate(-38 341.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">8</text>
+<rect x="367.4" y="529.6" width="25.9" height="2.4" fill="#4f83cc" opacity="0.82"/>
+<rect x="406.7" y="531.3" width="25.9" height="0.7" fill="#4f83cc" opacity="0.82"/>
+<text x="419.6" y="552" transform="rotate(-38 419.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">10</text>
+<rect x="445.9" y="530.9" width="25.9" height="1.1" fill="#4f83cc" opacity="0.82"/>
+<rect x="485.2" y="531.1" width="25.9" height="0.9" fill="#4f83cc" opacity="0.82"/>
+<text x="498.1" y="552" transform="rotate(-38 498.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">12</text>
+<rect x="524.4" y="531.6" width="25.9" height="0.4" fill="#4f83cc" opacity="0.82"/>
+<rect x="563.7" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="576.6" y="552" transform="rotate(-38 576.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">14</text>
+<rect x="602.9" y="531.7" width="25.9" height="0.3" fill="#4f83cc" opacity="0.82"/>
+<rect x="642.2" y="531.9" width="25.9" height="0.1" fill="#4f83cc" opacity="0.82"/>
+<text x="655.1" y="552" transform="rotate(-38 655.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">16</text>
+<rect x="681.4" y="531.8" width="25.9" height="0.2" fill="#4f83cc" opacity="0.82"/>
+<rect x="720.7" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="733.6" y="552" transform="rotate(-38 733.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">18</text>
+<rect x="759.9" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<rect x="799.2" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="812.1" y="552" transform="rotate(-38 812.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">20</text>
+<rect x="838.4" y="531.9" width="25.9" height="0.1" fill="#4f83cc" opacity="0.82"/>
+<rect x="877.7" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="890.6" y="552" transform="rotate(-38 890.6 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">24</text>
+<rect x="916.9" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<rect x="956.2" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="969.1" y="552" transform="rotate(-38 969.1 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">29</text>
+<rect x="995.4" y="532.0" width="25.9" height="0.0" fill="#4f83cc" opacity="0.82"/>
+<text x="1008.4" y="552" transform="rotate(-38 1008.4 552)" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">31</text>
+<polyline fill="none" stroke="#15803d" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" points="105.6,386.8 144.9,294.1 184.1,403.8 223.4,415.7 262.6,399.7 301.9,168.8 341.1,354.9 380.4,389.6 419.6,441.2 458.9,413.6 498.1,405.9 537.4,380.7 576.6,532.0 615.9,272.6 655.1,532.0 694.4,532.0 733.6,532.0 772.9,532.0 812.1,78.0 851.4,532.0 890.6,532.0 929.9,532.0 969.1,532.0 1008.4,532.0"/>
+<circle cx="105.6" cy="386.8" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="144.9" cy="294.1" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="184.1" cy="403.8" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="223.4" cy="415.7" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="262.6" cy="399.7" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="301.9" cy="168.8" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="341.1" cy="354.9" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="380.4" cy="389.6" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="419.6" cy="441.2" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="458.9" cy="413.6" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="498.1" cy="405.9" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="537.4" cy="380.7" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="576.6" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="615.9" cy="272.6" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="655.1" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="694.4" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="733.6" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="772.9" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="812.1" cy="78.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="851.4" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="890.6" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="929.9" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="969.1" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<circle cx="1008.4" cy="532.0" r="3" fill="#ffffff" stroke="#15803d" stroke-width="1.8"><title>HR HR@10</title></circle>
+<polyline fill="none" stroke="#dc2626" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" points="105.6,434.9 144.9,325.9 184.1,448.3 223.4,451.9 262.6,449.1 301.9,200.9 341.1,394.5 380.4,447.2 419.6,480.8 458.9,441.6 498.1,462.7 537.4,446.9 576.6,532.0 615.9,338.3 655.1,532.0 694.4,532.0 733.6,532.0 772.9,532.0 812.1,356.4 851.4,532.0 890.6,532.0 929.9,532.0 969.1,532.0 1008.4,532.0"/>
+<circle cx="105.6" cy="434.9" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="144.9" cy="325.9" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="184.1" cy="448.3" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="223.4" cy="451.9" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="262.6" cy="449.1" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="301.9" cy="200.9" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="341.1" cy="394.5" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="380.4" cy="447.2" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="419.6" cy="480.8" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="458.9" cy="441.6" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="498.1" cy="462.7" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="537.4" cy="446.9" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="576.6" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="615.9" cy="338.3" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="655.1" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="694.4" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="733.6" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="772.9" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="812.1" cy="356.4" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="851.4" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="890.6" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="929.9" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="969.1" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<circle cx="1008.4" cy="532.0" r="3" fill="#ffffff" stroke="#dc2626" stroke-width="1.8"><title>NDCG NDCG@10</title></circle>
+<rect x="788" y="47" width="12" height="12" fill="#4f83cc" opacity="0.82"/>
+<text x="806" y="57" font-family="Arial, sans-serif" font-size="12" fill="#111827">Test user count</text>
+<line x1="902" y1="53" x2="930" y2="53" stroke="#15803d" stroke-width="2.5"/>
+<text x="936" y="57" font-family="Arial, sans-serif" font-size="12" fill="#111827">HR@10</text>
+<line x1="978" y1="53" x2="1006" y2="53" stroke="#dc2626" stroke-width="2.5"/>
+<text x="1012" y="57" font-family="Arial, sans-serif" font-size="12" fill="#111827">NDCG@10</text>
+<text x="560.0" y="616" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111827">User interaction frequency before the test item</text>
+<text x="24" y="320.0" transform="rotate(-90 24 320.0)" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111827">Test user count</text>
+<text x="1096" y="320.0" transform="rotate(90 1096 320.0)" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#111827">Performance</text>
+</svg>

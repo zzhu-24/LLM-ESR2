@@ -18,7 +18,7 @@ bin_size=${FREQ_BIN_SIZE:-1}
 thresholds=${FREQ_THRESHOLDS:-}
 check_path=${CHECK_PATH:-}
 output_dir=${OUTPUT_DIR:-./outputs/sasrec_frequency_group}
-datasets=${DATASETS:-"yelp fashion beauty2014 games appliances musical"}
+datasets=${DATASETS:-"fashion beauty2014 games appliances musical"}
 
 max_len_for_dataset() {
         case "$1" in
