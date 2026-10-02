@@ -162,6 +162,63 @@ class SASRec(BaseSeqModel):
             return final_feat
 
 
+class LLMAdapterSASRec(SASRec):
+    """SASRec that replaces the trainable item-ID table with frozen LLM embeddings.
+
+    Only the two-layer projection adapter and the regular SASRec parameters are
+    trainable.  The adapter layout intentionally matches the first projection
+    used by the existing LLM-enhanced training models in this repository.
+    """
+
+    def __init__(self, user_num, item_num, device, args):
+        super().__init__(user_num, item_num, device, args)
+
+        # The ID embedding created by SASRec is not part of this model.
+        del self.item_emb
+
+        embedding_path = os.path.join(
+            "data", args.dataset, "handled", "itm_emb_np.pkl"
+        )
+        with open(embedding_path, "rb") as embedding_file:
+            llm_item_emb = np.asarray(pickle.load(embedding_file), dtype=np.float32)
+
+        if llm_item_emb.ndim != 2:
+            raise ValueError(
+                f"Expected a 2-D LLM item embedding matrix, got {llm_item_emb.shape}."
+            )
+        if llm_item_emb.shape[0] != self.item_num:
+            raise ValueError(
+                "LLM item embedding count does not match the interaction data: "
+                f"{llm_item_emb.shape[0]} != {self.item_num}."
+            )
+
+        # Item IDs start at 1; 0 is padding and item_num + 1 is the mask token.
+        zero_row = np.zeros((1, llm_item_emb.shape[1]), dtype=np.float32)
+        llm_item_emb = np.concatenate([zero_row, llm_item_emb, zero_row], axis=0)
+        self.llm_item_emb = nn.Embedding.from_pretrained(
+            torch.from_numpy(llm_item_emb), freeze=True, padding_idx=0
+        )
+
+        adapter_hidden_size = max(1, llm_item_emb.shape[1] // 2)
+        self.adapter = nn.Sequential(
+            nn.Linear(llm_item_emb.shape[1], adapter_hidden_size),
+            nn.Linear(adapter_hidden_size, args.hidden_size),
+        )
+
+        self.filter_init_modules = ["llm_item_emb"]
+        self._init_weights()
+
+    def _get_embedding(self, item_ids):
+        return self.adapter(self.llm_item_emb(item_ids))
+
+    def log2feats(self, log_seqs, positions):
+        seqs = self._get_embedding(log_seqs)
+        seqs *= self.adapter[-1].out_features ** 0.5
+        seqs += self.pos_emb(positions.long())
+        seqs = self.emb_dropout(seqs)
+        return self.backbone(seqs, log_seqs)
+
+
 
 class SASRec_seq(SASRec):
 
@@ -196,7 +253,6 @@ class SASRec_seq(SASRec):
         loss = pos_loss + neg_loss
 
         return loss
-
 
 
 

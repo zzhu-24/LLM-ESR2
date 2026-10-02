@@ -9,7 +9,7 @@ from generators.bert_generator import BertGeneratorAllUser
 from trainers.sequence_trainer import SeqTrainer
 from utils.utils import set_seed
 from utils.logger import Logger
-from models.SASRec import SASRec, SASRec_seq
+from models.SASRec import LLMAdapterSASRec, SASRec, SASRec_seq
 from models.Bert4Rec import Bert4Rec
 from models.GRU4Rec import GRU4Rec, GRU4Rec_seq
 
@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 # Required parameters
 parser.add_argument("--model_name", 
                     default='sasrec',
-                    choices=["sasrec", "bert4rec", "gru4rec"],
+                    choices=["sasrec", "llm_adapter_sasrec", "bert4rec", "gru4rec"],
                     type=str, 
                     required=False,
                     help="model name")
@@ -271,6 +271,12 @@ class BaselineTrainer(SeqTrainer):
                 self.model = SASRec_seq(self.user_num, self.item_num, self.device, self.args)
             else:
                 self.model = SASRec(self.user_num, self.item_num, self.device, self.args)
+        elif self.args.model_name == "llm_adapter_sasrec":
+            if self.args.use_seq2seq:
+                raise ValueError("llm_adapter_sasrec currently uses the point-wise SASRec loss.")
+            self.model = LLMAdapterSASRec(
+                self.user_num, self.item_num, self.device, self.args
+            )
         elif self.args.model_name == "bert4rec":
             self.model = Bert4Rec(self.user_num, self.item_num, self.device, self.args)
         elif self.args.model_name == "gru4rec":
@@ -343,7 +349,7 @@ def main():
             generator = GeneratorAllUser(args, logger, device)
     elif args.model_name == "bert4rec":
         generator = BertGeneratorAllUser(args, logger, device)
-    elif args.model_name == "sasrec":
+    elif args.model_name in ("sasrec", "llm_adapter_sasrec"):
         if args.use_seq2seq:
             generator = Seq2SeqGeneratorAllUser(args, logger, device)
         else:
@@ -364,8 +370,8 @@ def main():
     elif args.do_group:
         trainer.test_group()
     elif args.do_freq_group:
-        if args.model_name != "sasrec":
-            raise ValueError("--do_freq_group is intended for SASRec. Please set --model_name sasrec.")
+        if args.model_name not in ("sasrec", "llm_adapter_sasrec"):
+            raise ValueError("--do_freq_group is intended for a SASRec model.")
         trainer.frequency_group_test()
     else:
         trainer.train()
