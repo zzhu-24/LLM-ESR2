@@ -186,11 +186,12 @@ class LLMAdapterSASRec(SASRec):
             raise ValueError(
                 f"Expected a 2-D LLM item embedding matrix, got {llm_item_emb.shape}."
             )
-        if llm_item_emb.shape[0] != self.item_num:
+        if llm_item_emb.shape[0] < self.item_num:
             raise ValueError(
                 "LLM item embedding count does not match the interaction data: "
-                f"{llm_item_emb.shape[0]} != {self.item_num}."
+                f"{llm_item_emb.shape[0]} < {self.item_num}."
             )
+        llm_item_emb = llm_item_emb[:self.item_num]
 
         # Item IDs start at 1; 0 is padding and item_num + 1 is the mask token.
         zero_row = np.zeros((1, llm_item_emb.shape[1]), dtype=np.float32)
