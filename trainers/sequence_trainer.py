@@ -36,6 +36,10 @@ class SeqTrainer(Trainer):
 
         for batch in prog_iter:
 
+            max_train_steps = getattr(self.args, "max_train_steps", 0)
+            if max_train_steps > 0 and getattr(self, "global_step", 0) >= max_train_steps:
+                break
+
             batch = tuple(t.to(self.device) for t in batch)
 
             train_start = time.time()

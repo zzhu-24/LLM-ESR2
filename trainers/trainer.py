@@ -160,7 +160,11 @@ class Trainer(object):
                 #self.scheduler.step()
                 self.stopper(metric_dict[self.watch_metric], epoch, model_to_save, self.optimizer, self.scheduler)
 
-                if self.stopper.early_stop:
+                max_train_steps = getattr(self.args, "max_train_steps", 0)
+                if max_train_steps > 0 and getattr(self, "global_step", 0) >= max_train_steps:
+                    break
+
+                if self.stopper.early_stop and max_train_steps <= 0:
 
                     break
         
@@ -197,4 +201,3 @@ class Trainer(object):
         freeze_num = total_num - trainable_num
 
         return freeze_num, trainable_num
-

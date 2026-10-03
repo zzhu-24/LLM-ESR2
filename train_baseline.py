@@ -202,6 +202,10 @@ parser.add_argument("--num_train_epochs",
                     default=100,
                     type=float,
                     help="Total number of training epochs to perform.")
+parser.add_argument("--max_train_steps",
+                    default=0,
+                    type=int,
+                    help="Stop after exactly this many optimizer steps; 0 uses epoch/early-stop control.")
 parser.add_argument("--lr_dc_step",
                     default=1000,
                     type=int,
