@@ -12,12 +12,11 @@ from utils.logger import Logger
 from models.SASRec import LLMAdapterSASRec, SASRec, SASRec_seq
 from models.Bert4Rec import Bert4Rec
 from models.GRU4Rec import GRU4Rec, GRU4Rec_seq
-from utils.item_neighbor_similarity import (
-    TOPK,
+from utils.item_sequence_similarity import (
     append_trace,
     get_model_item_embeddings,
     initialize_trace,
-    mean_topk_by_group,
+    mean_sequence_similarity_by_group,
 )
 
 
@@ -107,20 +106,20 @@ parser.add_argument("--freq_output_dir",
                     default="./outputs/sasrec_frequency_group",
                     type=str,
                     help="output directory for frequency group CSV and SVG files")
-parser.add_argument("--track_neighbor_similarity",
+parser.add_argument("--track_sequence_similarity",
                     default=False,
                     action="store_true",
-                    help="record fixed Top-20 item-neighbor similarity during training")
-parser.add_argument("--neighbor_similarity_interval",
+                    help="record current-item-to-history similarity during training")
+parser.add_argument("--sequence_similarity_interval",
                     default=100,
                     type=int,
-                    help="optimizer-step interval for item-neighbor similarity tracking")
-parser.add_argument("--neighbor_similarity_batch_size",
+                    help="optimizer-step interval for sequence similarity tracking")
+parser.add_argument("--sequence_similarity_batch_size",
                     default=512,
                     type=int,
-                    help="query batch size for exact item-neighbor search")
-parser.add_argument("--neighbor_similarity_output_dir",
-                    default="./outputs/item_neighbor_similarity",
+                    help="sample batch size for sequence similarity calculation")
+parser.add_argument("--sequence_similarity_output_dir",
+                    default="./outputs/item_sequence_similarity",
                     type=str,
                     help="directory for training-step similarity traces")
 
@@ -288,52 +287,53 @@ class BaselineTrainer(SeqTrainer):
         self.enable_id = False  # baseline models don't use ID
 
         self.global_step = 0
-        self.neighbor_trace_path = None
-        if args.track_neighbor_similarity:
+        self.sequence_trace_path = None
+        if args.track_sequence_similarity:
             if args.model_name not in ("sasrec", "llm_adapter_sasrec"):
                 raise ValueError(
-                    "Neighbor similarity tracking only supports SASRec models."
+                    "Sequence similarity tracking only supports SASRec models."
                 )
-            if args.neighbor_similarity_interval <= 0:
-                raise ValueError("--neighbor_similarity_interval must be positive.")
-            if args.neighbor_similarity_batch_size <= 0:
-                raise ValueError("--neighbor_similarity_batch_size must be positive.")
-            self.neighbor_trace_path = os.path.join(
-                args.neighbor_similarity_output_dir,
-                f"{args.dataset}_{args.model_name}_top{TOPK}_training_steps.csv",
+            if args.sequence_similarity_interval <= 0:
+                raise ValueError("--sequence_similarity_interval must be positive.")
+            if args.sequence_similarity_batch_size <= 0:
+                raise ValueError("--sequence_similarity_batch_size must be positive.")
+            self.sequence_trace_path = os.path.join(
+                args.sequence_similarity_output_dir,
+                f"{args.dataset}_{args.model_name}_sequence_similarity_training_steps.csv",
             )
-            initialize_trace(self.neighbor_trace_path)
-            self._record_neighbor_similarity()
+            initialize_trace(self.sequence_trace_path)
+            self._record_sequence_similarity()
 
-    def _record_neighbor_similarity(self):
+    def _record_sequence_similarity(self):
         was_training = self.model.training
         self.model.eval()
         with torch.no_grad():
             embeddings = get_model_item_embeddings(
                 self.model, self.args.model_name, self.item_num
             )
-            group_means, counts = mean_topk_by_group(
+            group_means, counts = mean_sequence_similarity_by_group(
                 embeddings,
                 self.item_pop,
                 self.args.ts_item,
-                self.args.neighbor_similarity_batch_size,
+                self.train_loader.dataset.data,
+                self.args.max_len,
+                self.args.sequence_similarity_batch_size,
             )
         append_trace(
-            self.neighbor_trace_path,
+            self.sequence_trace_path,
             self.global_step,
             group_means,
             counts,
         )
         for group in ("Head", "Tail"):
-            value = group_means[group].mean().item()
+            value = group_means[group]
             self.writer.add_scalar(
-                f"NeighborSimilarity/{group}@{TOPK}", value, self.global_step
+                f"SequenceSimilarity/{group}", value, self.global_step
             )
             self.logger.info(
-                "Neighbor similarity step=%d group=%s topk=%d mean=%.6f items=%d",
+                "Sequence similarity step=%d group=%s mean=%.6f samples=%d",
                 self.global_step,
                 group,
-                TOPK,
                 value,
                 counts[group],
             )
@@ -342,10 +342,10 @@ class BaselineTrainer(SeqTrainer):
 
     def _after_optimizer_step(self):
         if (
-            self.neighbor_trace_path is not None
-            and self.global_step % self.args.neighbor_similarity_interval == 0
+            self.sequence_trace_path is not None
+            and self.global_step % self.args.sequence_similarity_interval == 0
         ):
-            self._record_neighbor_similarity()
+            self._record_sequence_similarity()
     
     def _create_model(self):
         '''create baseline model'''

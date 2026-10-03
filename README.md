@@ -53,8 +53,8 @@ bash experiments/sasrec_frequency_group.bash
 The script writes per-group CSV files and histogram-plus-line SVG figures to `outputs/sasrec_frequency_group/`.
 
 4. To run the matched item-ID versus frozen-LLM-embedding SASRec experiment on
-the five Amazon datasets and plot the mean cosine similarity of each head/tail
-item's Top-20 embedding neighbors:
+the five Amazon datasets and plot the mean cosine similarity between each
+current item and the non-padding items in its training history:
 
 ```bash
 bash experiments/sasrec_item_neighbor_similarity.bash
@@ -62,9 +62,9 @@ bash experiments/sasrec_item_neighbor_similarity.bash
 
 The LLM item table is loaded from `data/<dataset>/handled/itm_emb_np.pkl` and
 kept frozen. Only its two-layer adapter and SASRec are trained. Starting at
-step 0, each model records the mean Top-20 cosine similarity for Head and Tail
-items every 100 optimizer steps. The training-step CSV traces and two-panel SVG
-are written to `outputs/item_neighbor_similarity/`.
+step 0, each model records the sequence-level mean cosine similarity for Head
+and Tail target items every 100 optimizer steps. The training-step CSV traces
+and two-panel SVG are written to `outputs/item_sequence_similarity/`.
 
 ## Citation
 

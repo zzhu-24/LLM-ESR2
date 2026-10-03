@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Plot Head/Tail Top-20 neighbor similarity over optimizer steps."""
+"""Plot current-item-to-history embedding similarity over optimizer steps."""
 
 import argparse
 import csv
 import html
 from pathlib import Path
-
-
-TOPK = 20
 
 
 def parse_args():
@@ -16,7 +13,7 @@ def parse_args():
     parser.add_argument("--id_trace", required=True)
     parser.add_argument("--llm_trace", required=True)
     parser.add_argument(
-        "--output_dir", default="outputs/item_neighbor_similarity"
+        "--output_dir", default="outputs/item_sequence_similarity"
     )
     return parser.parse_args()
 
@@ -30,10 +27,10 @@ def load_trace(path):
             series[group].append(
                 (
                     int(row["training_step"]),
-                    float(row["average_top20_cosine_similarity"]),
+                    float(row["average_sequence_cosine_similarity"]),
                 )
             )
-            counts[group] = int(row["item_count"])
+            counts[group] = int(row["sample_count"])
     for group, values in series.items():
         if not values:
             raise ValueError(f"Trace {path} has no {group} rows.")
@@ -73,7 +70,7 @@ def write_svg(results, counts, dataset, output_path):
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="white"/>',
         f'<text x="{width / 2}" y="30" text-anchor="middle" font-family="sans-serif" font-size="20">'
-        f'{html.escape(dataset)} item Top-{TOPK} neighbor similarity during training</text>',
+        f'{html.escape(dataset)} current-item vs history similarity during training</text>',
     ]
 
     for panel_x, (model, group_results) in zip(panel_xs, results.items()):
@@ -126,7 +123,7 @@ def write_svg(results, counts, dataset, output_path):
 
     svg.extend(
         [
-            '<text x="18" y="235" text-anchor="middle" font-family="sans-serif" font-size="13" transform="rotate(-90 18 235)">Mean Top-20 cosine similarity</text>',
+            '<text x="18" y="235" text-anchor="middle" font-family="sans-serif" font-size="13" transform="rotate(-90 18 235)">Mean current-item/history cosine similarity</text>',
             "</svg>",
         ]
     )
@@ -147,7 +144,7 @@ def main():
         "LLM embedding + adapter SASRec": llm_counts,
     }
     output_path = Path(args.output_dir) / (
-        f"{args.dataset}_sasrec_top{TOPK}_training_steps.svg"
+        f"{args.dataset}_sasrec_sequence_similarity_training_steps.svg"
     )
     write_svg(results, counts, args.dataset, output_path)
     print(f"SVG: {output_path}")

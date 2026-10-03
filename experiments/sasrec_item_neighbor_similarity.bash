@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Train matched ID and frozen-LLM+adapter SASRec models, then draw the two-panel
-# Top-20 neighbor-similarity curve for each Amazon dataset.
+# current-item-to-history similarity curve for each Amazon dataset.
 gpu_id="${GPU_ID:-0}"
 seed="${SEED:-42}"
 
@@ -31,23 +31,23 @@ for index in "${!datasets[@]}"; do
         --num_heads 1
         --dropout_rate 0.5
         --ts_item "${ts_item}"
-        --track_neighbor_similarity
-        --neighbor_similarity_interval 100
+        --track_sequence_similarity
+        --sequence_similarity_interval 100
         --log
     )
 
     python3 train_baseline.py \
         "${common_args[@]}" \
         --model_name sasrec \
-        --check_path neighbor_similarity_id
+        --check_path sequence_similarity_id
 
     python3 train_baseline.py \
         "${common_args[@]}" \
         --model_name llm_adapter_sasrec \
-        --check_path neighbor_similarity_llm_adapter
+        --check_path sequence_similarity_llm_adapter
 
-    python3 scripts/item_neighbor_similarity.py \
+    python3 scripts/item_sequence_similarity.py \
         --dataset "${dataset}" \
-        --id_trace "outputs/item_neighbor_similarity/${dataset}_sasrec_top20_training_steps.csv" \
-        --llm_trace "outputs/item_neighbor_similarity/${dataset}_llm_adapter_sasrec_top20_training_steps.csv"
+        --id_trace "outputs/item_sequence_similarity/${dataset}_sasrec_sequence_similarity_training_steps.csv" \
+        --llm_trace "outputs/item_sequence_similarity/${dataset}_llm_adapter_sasrec_sequence_similarity_training_steps.csv"
 done
