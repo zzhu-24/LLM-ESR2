@@ -61,8 +61,10 @@ bash experiments/sasrec_item_neighbor_similarity.bash
 ```
 
 The LLM item table is loaded from `data/<dataset>/handled/itm_emb_np.pkl` and
-kept frozen. Only its two-layer adapter and SASRec are trained. The comparison
-CSV and two-panel SVG are written to `outputs/item_neighbor_similarity/`.
+kept frozen. Only its two-layer adapter and SASRec are trained. Starting at
+step 0, each model records the mean Top-20 cosine similarity for Head and Tail
+items every 100 optimizer steps. The training-step CSV traces and two-panel SVG
+are written to `outputs/item_neighbor_similarity/`.
 
 ## Citation
 

@@ -5,7 +5,6 @@ set -euo pipefail
 # Top-20 neighbor-similarity curve for each Amazon dataset.
 gpu_id="${GPU_ID:-0}"
 seed="${SEED:-42}"
-topk="${TOPK:-20}"
 
 datasets=(beauty2014 fashion games musical appliances)
 ts_items=(6 2 13 9 3)
@@ -32,6 +31,8 @@ for index in "${!datasets[@]}"; do
         --num_heads 1
         --dropout_rate 0.5
         --ts_item "${ts_item}"
+        --track_neighbor_similarity
+        --neighbor_similarity_interval 100
         --log
     )
 
@@ -47,8 +48,6 @@ for index in "${!datasets[@]}"; do
 
     python3 scripts/item_neighbor_similarity.py \
         --dataset "${dataset}" \
-        --id_checkpoint "saved/${dataset}/sasrec/neighbor_similarity_id/pytorch_model.bin" \
-        --llm_checkpoint "saved/${dataset}/llm_adapter_sasrec/neighbor_similarity_llm_adapter/pytorch_model.bin" \
-        --ts_item "${ts_item}" \
-        --topk "${topk}"
+        --id_trace "outputs/item_neighbor_similarity/${dataset}_sasrec_top20_training_steps.csv" \
+        --llm_trace "outputs/item_neighbor_similarity/${dataset}_llm_adapter_sasrec_top20_training_steps.csv"
 done

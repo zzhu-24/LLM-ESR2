@@ -53,6 +53,11 @@ class SeqTrainer(Trainer):
             self.optimizer.step()
             self.optimizer.zero_grad()
 
+            self.global_step = getattr(self, "global_step", 0) + 1
+            after_optimizer_step = getattr(self, "_after_optimizer_step", None)
+            if after_optimizer_step is not None:
+                after_optimizer_step()
+
             train_end = time.time()
             train_time.append(train_end-train_start)
 
