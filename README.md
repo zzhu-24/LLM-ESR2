@@ -66,6 +66,13 @@ step 0, each model records the sequence-level mean cosine similarity for Head
 and Tail target items every 100 optimizer steps. The training-step CSV traces
 and two-panel SVG are written to `outputs/item_sequence_similarity/`.
 
+If training is already complete and the CSV traces exist, regenerate only the
+Head/Tail comparison figures with:
+
+```bash
+bash experiments/plot_sasrec_item_sequence_similarity.bash
+```
+
 ## Citation
 
 If the code and the paper are useful for you, it is appreciable to cite our paper:

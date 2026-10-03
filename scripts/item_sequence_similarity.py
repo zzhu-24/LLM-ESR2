@@ -64,7 +64,10 @@ def write_svg(results, counts, dataset, output_path):
     margin = max((y_max - y_min) * 0.08, 0.01)
     y_min -= margin
     y_max += margin
-    colors = {"Head": "#2563eb", "Tail": "#dc2626"}
+    colors = {
+        "ID embedding": "#2563eb",
+        "LLM embedding + adapter": "#dc2626",
+    }
 
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
@@ -73,13 +76,18 @@ def write_svg(results, counts, dataset, output_path):
         f'{html.escape(dataset)} current-item vs history similarity during training</text>',
     ]
 
-    for panel_x, (model, group_results) in zip(panel_xs, results.items()):
-        x_max = max(step for values in group_results.values() for step, _ in values)
+    for panel_x, group in zip(panel_xs, ("Head", "Tail")):
+        x_max = max(
+            step
+            for group_results in results.values()
+            for step, _ in group_results[group]
+        )
+        sample_count = counts["ID embedding"][group]
         svg.extend(
             [
                 f'<line x1="{panel_x}" y1="{panel_y + panel_height}" x2="{panel_x + panel_width}" y2="{panel_y + panel_height}" stroke="#111827"/>',
                 f'<line x1="{panel_x}" y1="{panel_y}" x2="{panel_x}" y2="{panel_y + panel_height}" stroke="#111827"/>',
-                f'<text x="{panel_x + panel_width / 2}" y="65" text-anchor="middle" font-family="sans-serif" font-size="17">{html.escape(model)}</text>',
+                f'<text x="{panel_x + panel_width / 2}" y="65" text-anchor="middle" font-family="sans-serif" font-size="17">{group} group (n={sample_count})</text>',
                 f'<text x="{panel_x + panel_width / 2}" y="440" text-anchor="middle" font-family="sans-serif" font-size="13">Training step</text>',
             ]
         )
@@ -97,7 +105,8 @@ def write_svg(results, counts, dataset, output_path):
                     f'<text x="{panel_x - 8}" y="{tick_y + 4:.2f}" text-anchor="end" font-family="sans-serif" font-size="11">{tick_value:.3f}</text>',
                 ]
             )
-        for group, values in group_results.items():
+        for model, group_results in results.items():
+            values = group_results[group]
             points = _polyline_points(
                 values,
                 panel_x,
@@ -109,15 +118,15 @@ def write_svg(results, counts, dataset, output_path):
                 y_max,
             )
             svg.append(
-                f'<polyline points="{points}" fill="none" stroke="{colors[group]}" stroke-width="2.5"/>'
+                f'<polyline points="{points}" fill="none" stroke="{colors[model]}" stroke-width="2.5"/>'
             )
-        legend_x = panel_x + 245
-        for offset, group in enumerate(("Head", "Tail")):
+        legend_x = panel_x + 200
+        for offset, model in enumerate(results):
             legend_y = panel_y + 20 + offset * 22
             svg.extend(
                 [
-                    f'<line x1="{legend_x}" y1="{legend_y}" x2="{legend_x + 26}" y2="{legend_y}" stroke="{colors[group]}" stroke-width="2.5"/>',
-                    f'<text x="{legend_x + 34}" y="{legend_y + 4}" font-family="sans-serif" font-size="12">{group} (n={counts[model][group]})</text>',
+                    f'<line x1="{legend_x}" y1="{legend_y}" x2="{legend_x + 26}" y2="{legend_y}" stroke="{colors[model]}" stroke-width="2.5"/>',
+                    f'<text x="{legend_x + 34}" y="{legend_y + 4}" font-family="sans-serif" font-size="12">{html.escape(model)}</text>',
                 ]
             )
 
@@ -136,12 +145,12 @@ def main():
     id_series, id_counts = load_trace(args.id_trace)
     llm_series, llm_counts = load_trace(args.llm_trace)
     results = {
-        "ID SASRec": id_series,
-        "LLM embedding + adapter SASRec": llm_series,
+        "ID embedding": id_series,
+        "LLM embedding + adapter": llm_series,
     }
     counts = {
-        "ID SASRec": id_counts,
-        "LLM embedding + adapter SASRec": llm_counts,
+        "ID embedding": id_counts,
+        "LLM embedding + adapter": llm_counts,
     }
     output_path = Path(args.output_dir) / (
         f"{args.dataset}_sasrec_sequence_similarity_training_steps.svg"
