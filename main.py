@@ -196,6 +196,10 @@ parser.add_argument("--intent_gate_dropout",
                     default=0.1,
                     type=float,
                     help="dropout rate inside the intent gate")
+parser.add_argument("--collab_token_num",
+                    default=2,
+                    type=int,
+                    help="fixed number of dynamic collaborative prefix tokens")
 parser.add_argument("--alpha",
                     default=0.1,
                     type=float,

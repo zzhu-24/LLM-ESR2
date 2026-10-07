@@ -172,6 +172,27 @@ class Seq2SeqGeneratorAllUser(Generator):
                                       num_workers=self.num_workers)
         
         return train_dataloader
-    
 
-    
+    def make_evalloader(self, test=False):
+
+        if test:
+            eval_dataset = concat_data([self.train, self.valid, self.test])
+            neighbor_dataset = concat_data([self.train, self.valid])
+        else:
+            eval_dataset = concat_data([self.train, self.valid])
+            neighbor_dataset = [self.train[user] for user in self.train]
+
+        self.eval_dataset = SeqDatasetAllUser(
+            self.args,
+            eval_dataset,
+            self.item_num,
+            self.args.max_len,
+            self.args.test_neg,
+            neighbor_data=neighbor_dataset,
+        )
+        return DataLoader(
+            self.eval_dataset,
+            sampler=SequentialSampler(self.eval_dataset),
+            batch_size=100,
+            num_workers=self.num_workers,
+        )

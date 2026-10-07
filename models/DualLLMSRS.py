@@ -88,8 +88,44 @@ class IntentGate(nn.Module):
         semantic_pool = self._masked_mean(semantic_embeddings, log_seqs)
         gap = torch.norm(collab_pool - semantic_pool, p=2, dim=-1, keepdim=True)
         gate_input = torch.cat([collab_pool, semantic_pool, gap], dim=-1)
-        weights = torch.softmax(self.net(gate_input), dim=-1)
-        return weights[:, 0:1], weights[:, 1:2], gap
+        branch_weights = torch.softmax(self.net(gate_input), dim=-1)
+        alignment_weight = torch.exp(-gap)
+        return (branch_weights[:, 0:1], branch_weights[:, 1:2],
+                alignment_weight, gap)
+
+
+class CollaborativeTokenGenerator(nn.Module):
+    """Compress semantic-neighbor histories into fixed-length dynamic tokens."""
+
+    def __init__(self, hidden_size, token_num, num_heads, dropout_rate):
+        super().__init__()
+        self.token_num = token_num
+        self.query_tokens = nn.Parameter(torch.empty(token_num, hidden_size))
+        self.query_attention = nn.MultiheadAttention(
+            hidden_size, num_heads, dropout=dropout_rate, batch_first=True)
+        self.layer_norm = nn.LayerNorm(hidden_size, eps=1e-8)
+        nn.init.xavier_normal_(self.query_tokens)
+
+    def forward(self, neighbor_embeddings, neighbor_mask):
+        batch_size = neighbor_embeddings.shape[0]
+        queries = self.query_tokens.unsqueeze(0).expand(batch_size, -1, -1)
+
+        # MultiheadAttention cannot consume a row whose every key is masked.
+        has_neighbor = neighbor_mask.any(dim=1)
+        safe_mask = neighbor_mask.clone()
+        if (~has_neighbor).any():
+            safe_mask[~has_neighbor, 0] = True
+
+        attended, _ = self.query_attention(
+            queries,
+            neighbor_embeddings,
+            neighbor_embeddings,
+            key_padding_mask=~safe_mask,
+            need_weights=False,
+        )
+        collaborative_tokens = self.layer_norm(queries + attended)
+        return collaborative_tokens * has_neighbor[:, None, None].to(
+            collaborative_tokens.dtype)
 
 
 class DualLLMGRU4Rec(GRU4Rec):
@@ -562,6 +598,18 @@ class DualIntentColMod(DualColMod):
         self.semantic_filter_weight = args.semantic_filter_weight
         self.semantic_graph_threshold = args.semantic_graph_threshold
         self.intent_gate = IntentGate(args.hidden_size, args.intent_gate_dropout)
+        self.enable_id = True
+        # PCA initializes the ID branch, but recommendation training may update it.
+        self.id_item_emb.weight.requires_grad = True
+        # The pretrained LLM table stays fixed; its projection adapter is trainable.
+        self.llm_item_emb.weight.requires_grad = False
+        self.collab_token_num = args.collab_token_num
+        self.collab_token_generator = CollaborativeTokenGenerator(
+            args.hidden_size,
+            args.collab_token_num,
+            args.num_heads,
+            args.intent_gate_dropout,
+        )
 
     def _normalize_adj(self, adjacency):
         row_sum = adjacency.sum(dim=-1, keepdim=True)
@@ -577,16 +625,37 @@ class DualIntentColMod(DualColMod):
         pure_co_adj = torch.relu(co_adj - self.semantic_filter_weight * semantic_adj)
         return self._normalize_adj(pure_co_adj)
 
-    def _masked_alignment_loss(self, collab_embeddings, semantic_embeddings, log_seqs, gap):
+    def _masked_alignment_loss(self, collab_embeddings, semantic_embeddings, log_seqs,
+                               alignment_weight):
         mask = (log_seqs > 0).float()
         collab_norm = F.normalize(collab_embeddings, p=2, dim=-1)
         semantic_norm = F.normalize(semantic_embeddings, p=2, dim=-1)
         per_position_loss = F.mse_loss(collab_norm, semantic_norm, reduction='none').mean(dim=-1)
-        loss = (per_position_loss * mask).sum() / mask.sum().clamp_min(1.0)
-        gap_weight = torch.exp(-gap.detach()).mean()
-        return gap_weight * loss
+        per_user_loss = (per_position_loss * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+        per_user_weight = alignment_weight.detach().squeeze(-1)
+        valid_users = (mask.sum(dim=1) > 0).float()
+        weighted_loss = per_user_weight * per_user_loss * valid_users
+        return weighted_loss.sum() / valid_users.sum().clamp_min(1.0)
 
-    def log2feats(self, log_seqs, positions):
+    def _get_embedding(self, item_ids):
+        id_item_emb = self.id_item_emb(item_ids)
+        llm_item_emb = self.first_adapter(self.llm_item_emb(item_ids))
+        return torch.cat([id_item_emb, llm_item_emb], dim=-1)
+
+    def _build_collaborative_tokens(self, sim_seq, sim_positions):
+        batch_size, neighbor_num, seq_len = sim_seq.shape
+        neighbor_embeddings = self.llm_item_emb(sim_seq)
+        neighbor_embeddings = self.first_adapter(neighbor_embeddings)
+        neighbor_embeddings *= self.id_item_emb.embedding_dim ** 0.5
+        neighbor_embeddings += self.pos_emb(sim_positions.long())
+        neighbor_embeddings = self.emb_dropout(neighbor_embeddings)
+        neighbor_embeddings = neighbor_embeddings.view(
+            batch_size, neighbor_num * seq_len, -1)
+        neighbor_mask = (sim_seq > 0).view(batch_size, neighbor_num * seq_len)
+        return self.collab_token_generator(neighbor_embeddings, neighbor_mask)
+
+    def log2feats(self, log_seqs, positions, sim_seq=None, sim_positions=None,
+                  return_alignment=False):
         id_seqs = self.id_item_emb(log_seqs)
         id_seqs *= self.id_item_emb.embedding_dim ** 0.5
         id_seqs += self.pos_emb(positions.long())
@@ -605,8 +674,10 @@ class DualIntentColMod(DualColMod):
         id_seqs = self.hypergraph_convolution(intent_adj, id_seqs)
         llm_seqs = self.hypergraph_convolution(semantic_adj, llm_seqs)
 
-        collab_weight, semantic_weight, gap = self.intent_gate(id_seqs, llm_seqs, log_seqs)
-        pairwise_align_loss = self._masked_alignment_loss(id_seqs, llm_seqs, log_seqs, gap)
+        collab_weight, semantic_weight, alignment_weight, _ = self.intent_gate(
+            id_seqs, llm_seqs, log_seqs)
+        pairwise_align_loss = self._masked_alignment_loss(
+            id_seqs, llm_seqs, log_seqs, alignment_weight)
 
         if self.use_adapter:
             adapter_id_seqs = self.adapter_id(llm_seqs, id_seqs, log_seqs)
@@ -616,16 +687,50 @@ class DualIntentColMod(DualColMod):
             adapter_llm_seqs = llm_seqs
 
         id_log_feats = self.backbone(adapter_id_seqs, log_seqs)
-        llm_log_feats = self.backbone(adapter_llm_seqs, log_seqs)
+
+        if sim_seq is not None and sim_positions is not None:
+            collaborative_tokens = self._build_collaborative_tokens(
+                sim_seq, sim_positions)
+            adapter_llm_seqs = torch.cat(
+                [collaborative_tokens, adapter_llm_seqs], dim=1)
+            prefix_mask = torch.ones(
+                log_seqs.shape[0], self.collab_token_num,
+                dtype=log_seqs.dtype, device=log_seqs.device)
+            llm_log_seqs = torch.cat([prefix_mask, log_seqs], dim=1)
+        else:
+            llm_log_seqs = log_seqs
+
+        llm_log_feats = self.backbone(adapter_llm_seqs, llm_log_seqs)
+        if sim_seq is not None and sim_positions is not None:
+            llm_log_feats = llm_log_feats[:, self.collab_token_num:, :]
 
         id_log_feats = id_log_feats * collab_weight.unsqueeze(1)
         llm_log_feats = llm_log_feats * semantic_weight.unsqueeze(1)
 
-        if self.enable_id:
+        if self.enable_id or return_alignment:
             return pairwise_align_loss, id_log_feats, llm_log_feats
+        return torch.cat([id_log_feats, llm_log_feats], dim=-1)
 
-        log_feats = torch.cat([id_log_feats, llm_log_feats], dim=-1)
-        return log_feats
+    def predict(self, seq, item_indices, positions, **kwargs):
+        _, id_log_feats, llm_log_feats = self.log2feats(
+            seq,
+            positions,
+            sim_seq=kwargs.get("sim_seq"),
+            sim_positions=kwargs.get("sim_positions"),
+        )
+        final_feat = torch.cat(
+            [id_log_feats[:, -1, :], llm_log_feats[:, -1, :]], dim=-1)
+        item_embs = self._get_embedding(item_indices)
+        return item_embs.matmul(final_feat.unsqueeze(-1)).squeeze(-1)
+
+    def get_user_emb(self, seq, positions, **kwargs):
+        _, id_log_feats, llm_log_feats = self.log2feats(
+            seq,
+            positions,
+            sim_seq=kwargs.get("sim_seq"),
+            sim_positions=kwargs.get("sim_positions"),
+        )
+        return id_log_feats[:, -1, :], llm_log_feats[:, -1, :]
 
 
 # class DualColMod(SASRec_seq):

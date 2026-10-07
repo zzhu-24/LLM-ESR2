@@ -65,11 +65,14 @@ class SeqDataset(Dataset):
 class SeqDatasetAllUser(SeqDataset):
     '''The train dataset for Sequential recommendation'''
 
-    def __init__(self, args, data, item_num, max_len, neg_num=1):
+    def __init__(self, args, data, item_num, max_len, neg_num=1,
+                 neighbor_data=None):
         
         super().__init__(data, item_num, max_len, neg_num)
         self.sim_user_num = args.sim_user_num
         self.sim_users = pickle.load(open(os.path.join("./data/"+args.dataset+"/handled/", "sim_user_100.pkl"), "rb"))
+        self.neighbor_data = data if neighbor_data is None else neighbor_data
+        self.neighbor_data_is_history = neighbor_data is not None
         self.var_name = ["seq", "pos", "neg", "positions", "user_id", "sim_seq", "sim_positions"]
 
 
@@ -126,21 +129,22 @@ class SeqDatasetAllUser(SeqDataset):
     def _get_user_seq(self, user):
 
         ### get the sequence of required user
-        inter = self.data[user]
+        inter = self.neighbor_data[user]
+        history = inter if self.neighbor_data_is_history else inter[:-1]
         seq = np.zeros([self.max_len], dtype=np.int32)
         idx = self.max_len - 1
-        for i in reversed(inter[:-1]):
+        for i in reversed(history):
             seq[idx] = i
             idx -= 1
             if idx == -1:
                 break
 
-        if len(inter) > self.max_len:
+        if len(history) > self.max_len:
             mask_len = 0
             positions = list(range(1, self.max_len+1))
         else:
-            mask_len = self.max_len - (len(inter) - 1)
-            positions = list(range(1, len(inter)-1+1))
+            mask_len = self.max_len - len(history)
+            positions = list(range(1, len(history)+1))
         
         positions = positions[-self.max_len:]
         positions = [0] * mask_len + positions
@@ -223,7 +227,11 @@ class Seq2SeqDatasetAllUser(Seq2SeqDataset):
         self.sim_users = pickle.load(open(os.path.join("./data/"+args.dataset+"/handled/", "sim_user_100.pkl"), "rb"))
         # self.sim_users = pickle.load(open(os.path.join("./data/"+args.dataset+"/handled/", "sim_user_100_peft.pkl"), "rb"))
         self.args = args
-        if self.args.enable_id:
+        self.use_collab_neighbors = (
+            self.args.enable_id
+            and self.args.model_name != "llmesr_intent_colmod"
+        )
+        if self.use_collab_neighbors:
 
             self.sim_collab_users = pickle.load(open(os.path.join("./data/"+args.dataset+"/handled/", "sim_user_collab_100.pkl"), "rb"))
             # self.sim_collab_users = pickle.load(open(os.path.join("./data/"+args.dataset+"/handled/", "sim_user_collab_100_peft.pkl"), "rb"))
@@ -278,7 +286,7 @@ class Seq2SeqDatasetAllUser(Seq2SeqDataset):
         sim_positions = np.array(sim_positions)
 
         ### do the same for collaboratively similar user
-        if self.args.enable_id:
+        if self.use_collab_neighbors:
             sim_collab_users = self.sim_collab_users[index][:self.sim_user_num]
             sim_collab_seq, sim_collab_positions = [], []
             for sim_user in sim_collab_users:
@@ -436,4 +444,3 @@ class BertRecTrainDatasetAllUser(Dataset):
         positions = np.array(positions)
 
         return seq, positions
-

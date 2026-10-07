@@ -78,6 +78,7 @@ do
     --semantic_filter_weight 0.5 \
     --semantic_graph_threshold 0.1 \
     --intent_gate_dropout 0.1 \
+    --collab_token_num 2 \
     --hgc_layers 2 \
     --enable_id \
     --use_adapter \
